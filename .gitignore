@@ -1,0 +1,10 @@
+.venv/
+.venv-intel/
+.runtime/
+__pycache__/
+dist/
+.build/
+.DS_Store
+.env
+.env.*
+*.log

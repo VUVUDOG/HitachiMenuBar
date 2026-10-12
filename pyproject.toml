@@ -1,0 +1,14 @@
+[project]
+name = "hitachi-menubar-cloud"
+version = "0.1.0"
+description = "Read-only Xiaomi cloud compatibility probe for Hitachi menu bar control"
+requires-python = ">=3.11"
+dependencies = ["requests>=2.32,<3", "pycryptodome>=3.21,<4", "keyring>=25,<26"]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.22.3",
+]
