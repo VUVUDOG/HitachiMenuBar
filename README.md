@@ -106,6 +106,14 @@ uv run python verify_packages.py
 
 请在 [Issues](https://github.com/VUVUDOG/HitachiMenuBar/issues) 提供版本、Mac 芯片、macOS 版本、复现步骤及「齿轮 → 复制诊断信息」。诊断不含账号、密码、设备标识或登录会话；不要提交实时二维码或设备报告。
 
+## 开源许可
+
+本项目采用 [MIT License](LICENSE) 开源，版权署名为 **Copyright (c) 2026 GT**。
+
+允许使用、复制、修改、分发及商用，包括发布修改后的版本；分发本软件或其重要部分时，须保留版权声明和 MIT 许可声明。软件按许可证中的“原样”条款提供。
+
+第三方依赖及引用代码仍遵循各自的许可证，相关版权与许可声明应予保留；本项目的 MIT 许可不替代第三方许可。欢迎通过 [Issues](https://github.com/VUVUDOG/HitachiMenuBar/issues) 反馈问题，或提交 Pull Request 参与改进。
+
 ## 实现参考
 
 - [hass-xiaomi-miot](https://github.com/al-one/hass-xiaomi-miot)：第三方设备列表和 MIoT 云端请求。
