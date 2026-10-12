@@ -2,9 +2,9 @@
 
 在 macOS 菜单栏控制通过「日立智家」关联到米家的日立中央空调。每台 Mac 独立扫码登录，可以跨网络使用，无需 Home Assistant、Tailscale 或家中 Mac 常开。
 
-<img src="docs/images/control-demo.png" alt="日立空调控制面板，演示数据" width="320">
+<img src="docs/images/control-glass.png" alt="v0.3.4 原生 Liquid Glass 控制面板，演示房间" width="360">
 
-截图为 v0.3.3 的功能示意，使用演示数据。v0.3.4 在 macOS 26+ 使用系统 Liquid Glass 背景，较旧系统使用菜单毛玻璃；底色随桌面变化。
+v0.3.4 的真实控制视图，在 macOS 26 上使用原生 Liquid Glass 渲染。截图使用演示房间、模拟状态和示例桌面，不包含真实账号或家庭设备数据。
 
 ## 下载与安装
 
@@ -17,12 +17,32 @@
 
 [全部版本与图文指南](https://github.com/VUVUDOG/HitachiMenuBar/releases) · [安装使用说明](docs/usage.md)
 
+v0.3.4 图文指南：[PDF](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.pdf) · [离线网页版](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.html) · [长图](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.png) · [完整分享包](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-sharing-kit.zip)
+
 1. 手机米家 → 连接三方平台 → 日立中央空调，输入日立智家账号密码完成关联，确认米家能控制设备。
 2. 下载匹配芯片的 ZIP，解压后将 `HitachiMenuBar.app` 放入「应用程序」并打开。
 3. 点击菜单栏「空调」，选择「扫码登录米家」，用已关联设备的米家账号扫码并在手机确认。
 4. 等待房间和状态载入，选择房间进行控制。
 
 安装包包含运行环境，无需安装 Python、uv 或开发工具。每台 Mac 各自登录。
+
+## 系统玻璃外观
+
+| 系统 | 背景效果 |
+| --- | --- |
+| macOS 26 或更新 | 原生 Liquid Glass，带系统玻璃底色。 |
+| macOS 13–15 | 自动使用系统菜单毛玻璃，保留旧系统兼容性。 |
+
+两种背景均保留圆角和窗口阴影，窗口随内容贴合，不增加上下占位。外观由系统版本决定，Apple Silicon 和 Intel 都采用相同判断；底色随壁纸和后方窗口变化。启用系统「降低透明度」等辅助功能时，系统材质的透明程度也会变化。
+
+<details>
+<summary>查看兼容毛玻璃分支</summary>
+
+<img src="docs/images/control-menu.png" alt="系统菜单毛玻璃兼容分支，演示房间" width="320">
+
+此图在 macOS 26 上强制使用菜单毛玻璃分支渲染，用于展示兼容材质；具体旧系统显示效果可能不同。
+
+</details>
 
 ## 功能
 
@@ -48,7 +68,7 @@ Intel 版已通过 Apple Silicon 主机上的 Rosetta 验证，尚未在实体 I
 
 ## 源码构建
 
-开发需要 macOS、Xcode 26 或更新版本（包含 macOS 26+ SDK） 和 [uv](https://docs.astral.sh/uv/)。
+开发需要 macOS、Xcode 26 或更新版本（包含 macOS 26+ SDK）和 [uv](https://docs.astral.sh/uv/)。
 
 Apple Silicon：
 

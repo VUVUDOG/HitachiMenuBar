@@ -1,6 +1,8 @@
 # 安装与使用
 
-[下载最新版](https://github.com/VUVUDOG/HitachiMenuBar/releases/latest)。PDF、离线网页版和长图指南在 [v0.3.3 附件](https://github.com/VUVUDOG/HitachiMenuBar/releases/tag/v0.3.3) 中，操作步骤同样适用于 v0.3.4。
+[下载最新版](https://github.com/VUVUDOG/HitachiMenuBar/releases/latest)。本说明和截图对应 **v0.3.4**。
+
+[PDF 图文指南](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.pdf) · [离线网页版](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.html) · [长图](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.png) · [含两种安装包的分享包](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-sharing-kit.zip)
 
 ## 1. 手机关联设备
 
@@ -14,13 +16,13 @@
 
 ## 3. 扫码登录
 
-<img src="images/login-demo.png" alt="扫码登录入口" width="320">
+<img src="images/login-glass.png" alt="v0.3.4 玻璃底色的扫码登录入口" width="360">
 
 点击菜单栏「空调」→「扫码登录米家」，用已关联设备的米家账号扫描软件实时二维码并在手机确认。过期时重新发起扫码。每台 Mac 独立登录。
 
 ## 4. 控制面板
 
-<img src="images/control-demo.png" alt="演示控制面板" width="320">
+<img src="images/control-glass.png" alt="v0.3.4 Liquid Glass 控制面板，演示数据" width="360">
 
 | 位置 | 用法 |
 | --- | --- |
@@ -35,7 +37,9 @@
 
 当前已验证设备没有实测室温属性，大数字是设定温度。功能及范围依设备而定。
 
-v0.3.4 主面板具有系统玻璃底色和阴影：macOS 26+ 使用原生 Liquid Glass，macOS 13–15 使用系统菜单毛玻璃。底色随壁纸和后方窗口变化，具体透明程度由系统材质及辅助功能设置决定。文中截图为 v0.3.3 功能示意。
+v0.3.4 主面板具有系统玻璃底色和阴影：macOS 26+ 使用原生 Liquid Glass，macOS 13–15 使用系统菜单毛玻璃。底色随壁纸和后方窗口变化，具体透明程度由系统材质及辅助功能设置决定。外观按系统版本选择，与 Mac 芯片类型无关。
+
+以上截图使用 v0.3.4 的原生视图，在 macOS 26 上渲染；房间、状态和桌面背景为演示数据。
 
 ## 5. 钥匙串与账号
 
