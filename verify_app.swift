@@ -51,6 +51,7 @@ let hosting = NSHostingView(rootView: ControlView(model: interrupted, onHeightCh
 hosting.sizingOptions = [.intrinsicContentSize]
 hosting.frame = NSRect(x: 0, y: 0, width: 376, height: 100)
 let controlHeight = hosting.fittingSize.height
+let layoutRooms = interrupted.rooms
 interrupted.rooms = []; interrupted.authState = "logged_out"
 RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
 let signedOutHeight = hosting.fittingSize.height
@@ -61,6 +62,38 @@ expect(controlHeight > signedOutHeight + 100, "Control panel must measure its na
 expect(qrHeight > signedOutHeight + 100, "QR panel must grow to fit its content")
 expect(signedOutHeight > 200 && signedOutHeight < 450, "Signed-out panel must shrink without fixed-height padding")
 print("Native layout: control \(Int(controlHeight)) / signed out \(Int(signedOutHeight)) / QR \(Int(qrHeight)) pt")
+
+// Reproduce login/QR/room transitions inside the actual material container.
+// Exercise the legacy branch even on macOS 26 to catch wrapper sizing regressions.
+for useGlass in [true, false] {
+    let host = TransparentHostingView(rootView: ControlView(model: interrupted, onHeightChange: { _ in }))
+    host.sizingOptions = [.intrinsicContentSize]
+    host.frame = NSRect(x: 0, y: 0, width: 376, height: 100)
+    let container = PanelContentView(content: host, useLiquidGlass: useGlass)
+    let window = MenuPanel(contentRect: host.frame, styleMask: .borderless, backing: .buffered, defer: false)
+    window.isReleasedWhenClosed = false
+    window.contentView = container
+    for state in ["control", "signed-out", "qr", "control"] {
+        interrupted.rooms = state == "control" ? layoutRooms : []
+        interrupted.active = state == "qr"
+        interrupted.phase = state == "qr" ? "awaiting_scan" : "logged_out"
+        interrupted.qr = state == "qr" ? NSImage(size: NSSize(width: 232, height: 232)) : nil
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+        let height = ceil(host.fittingSize.height)
+        window.setContentSize(NSSize(width: 376, height: height))
+        container.layoutSubtreeIfNeeded()
+        expect(abs(container.bounds.height - height) <= 1, "Material must fill the measured window")
+        expect(host.frame == container.bounds && container.backdrop.frame == container.bounds,
+               "Login transitions must not leave extra space above or below the material")
+    }
+    if #available(macOS 26.0, *), useGlass {
+        expect(container.usesLiquidGlass && container.backdrop is NSGlassEffectView, "New Macs must use native Liquid Glass")
+    } else {
+        expect(!container.usesLiquidGlass && container.backdrop is NSVisualEffectView, "Older Macs must use the menu material")
+    }
+    window.close()
+}
+print("Native backdrop: Liquid Glass and legacy menu material follow all panel sizes")
 
 let cacheRuntime = testRuntime.appendingPathComponent("cache-test")
 try FileManager.default.createDirectory(at: cacheRuntime, withIntermediateDirectories: true)

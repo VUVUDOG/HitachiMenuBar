@@ -4,7 +4,7 @@
 
 <img src="docs/images/control-demo.png" alt="日立空调控制面板，演示数据" width="320">
 
-截图使用演示房间和模拟状态，透明面板以深色背景衬托。
+截图为 v0.3.3 的功能示意，使用演示数据。v0.3.4 在 macOS 26+ 使用系统 Liquid Glass 背景，较旧系统使用菜单毛玻璃；底色随桌面变化。
 
 ## 下载与安装
 
@@ -12,8 +12,8 @@
 
 | Mac 类型 | 下载 |
 | --- | --- |
-| Apple Silicon（M 系列） | [arm64.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.3/HitachiMenuBar-0.3.3-arm64.zip) |
-| Intel 处理器 | [intel.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.3/HitachiMenuBar-0.3.3-intel.zip) |
+| Apple Silicon（M 系列） | [arm64.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-arm64.zip) |
+| Intel 处理器 | [intel.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-intel.zip) |
 
 [全部版本与图文指南](https://github.com/VUVUDOG/HitachiMenuBar/releases) · [安装使用说明](docs/usage.md)
 
@@ -26,6 +26,7 @@
 
 ## 功能
 
+- 系统玻璃背景、圆角与窗口阴影；macOS 26+ 使用原生 Liquid Glass，macOS 13–15 自动回退到菜单毛玻璃。
 - 多房间切换、开关、设定温度、运行模式和风量。
 - 控制选项按设备功能定义生成，读取不到或不可写的功能不开放操作。
 - 展开面板立即发起刷新，随后每 30 秒刷新；收起后暂停。
@@ -47,7 +48,7 @@ Intel 版已通过 Apple Silicon 主机上的 Rosetta 验证，尚未在实体 I
 
 ## 源码构建
 
-开发需要 macOS、Xcode Command Line Tools 和 [uv](https://docs.astral.sh/uv/)。
+开发需要 macOS、Xcode 26 或更新版本（包含 macOS 26+ SDK） 和 [uv](https://docs.astral.sh/uv/)。
 
 Apple Silicon：
 

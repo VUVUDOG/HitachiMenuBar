@@ -662,6 +662,54 @@ final class TransparentHostingView<Content: View>: NSHostingView<Content> {
     override var isOpaque: Bool { false }
 }
 
+// The backdrop and SwiftUI content share the exact same bounds. Measure the
+// hosting view, never the material container, to avoid empty bands on resize.
+final class PanelContentView: NSView {
+    let content: NSView
+    let backdrop: NSView
+    let usesLiquidGlass: Bool
+
+    init(content: NSView, useLiquidGlass: Bool = true) {
+        self.content = content
+        if #available(macOS 26.0, *), useLiquidGlass {
+            let glass = NSGlassEffectView(frame: content.frame)
+            glass.style = .regular
+            glass.cornerRadius = 20
+            glass.contentView = content
+            backdrop = glass
+            usesLiquidGlass = true
+        } else {
+            let material = NSVisualEffectView(frame: content.frame)
+            material.material = .menu
+            material.blendingMode = .behindWindow
+            material.state = .active
+            material.wantsLayer = true
+            material.layer?.cornerRadius = 20
+            material.layer?.masksToBounds = true
+            material.layer?.borderWidth = 1
+            material.layer?.borderColor = NSColor.white.withAlphaComponent(0.16).cgColor
+            material.addSubview(content)
+            backdrop = material
+            usesLiquidGlass = false
+        }
+        super.init(frame: content.frame)
+        appearance = NSAppearance(named: .darkAqua)
+        autoresizingMask = [.width, .height]
+        backdrop.autoresizingMask = [.width, .height]
+        content.autoresizingMask = [.width, .height]
+        addSubview(backdrop)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override var isOpaque: Bool { false }
+
+    override func layout() {
+        super.layout()
+        backdrop.frame = bounds
+        content.frame = bounds
+    }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate {
     var applicationLease: ApplicationLease?
     var showObserver: NSObjectProtocol?
@@ -701,7 +749,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.hidesOnDeactivate = false
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = false
+        panel.hasShadow = true
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         let host = TransparentHostingView(rootView: ControlView(model: model, onHeightChange: { [weak self] height in
             DispatchQueue.main.async { self?.resizePanel(height: height) }
@@ -711,9 +759,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         host.layer?.backgroundColor = NSColor.clear.cgColor
         host.frame = panel.contentRect(forFrameRect: panel.frame)
         host.autoresizingMask = [.width, .height]
-        // The hosting view itself is the window content. An extra autoresizing
-        // material view can leave gray bands when the SwiftUI height changes.
-        panel.contentView = host
+        panel.contentView = PanelContentView(content: host)
         resizePanel(height: host.fittingSize.height)
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in self?.panel.orderOut(nil) }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
@@ -763,10 +809,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel.setContentSize(size)
             positionPanel()
         }
-        // Keep the window and the hosting view exactly equal to the content;
-        // no centered minimum-height wrapper or unused top/bottom region.
+        // The glass material fills the measured content, including after login
+        // or room-count changes. There is no independent minimum panel height.
         let frame = NSRect(origin: .zero, size: size)
         if panel.contentView?.frame != frame { panel.contentView?.frame = frame }
+        panel.contentView?.layoutSubtreeIfNeeded()
+        panel.invalidateShadow()
     }
 
     func positionPanel() {

@@ -1,6 +1,6 @@
 # 安装与使用
 
-[下载最新版](https://github.com/VUVUDOG/HitachiMenuBar/releases/latest)，Release 附带 PDF、离线网页版和长图指南。
+[下载最新版](https://github.com/VUVUDOG/HitachiMenuBar/releases/latest)。PDF、离线网页版和长图指南在 [v0.3.3 附件](https://github.com/VUVUDOG/HitachiMenuBar/releases/tag/v0.3.3) 中，操作步骤同样适用于 v0.3.4。
 
 ## 1. 手机关联设备
 
@@ -34,6 +34,8 @@
 展开立即刷新，随后每 30 秒自动刷新；收起暂停。忙碌时跳过重复刷新，授权失败后暂停自动重试。点击面板外或按 Esc 收起。
 
 当前已验证设备没有实测室温属性，大数字是设定温度。功能及范围依设备而定。
+
+v0.3.4 主面板具有系统玻璃底色和阴影：macOS 26+ 使用原生 Liquid Glass，macOS 13–15 使用系统菜单毛玻璃。底色随壁纸和后方窗口变化，具体透明程度由系统材质及辅助功能设置决定。文中截图为 v0.3.3 功能示意。
 
 ## 5. 钥匙串与账号
 
