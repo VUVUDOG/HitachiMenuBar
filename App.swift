@@ -749,7 +749,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.hidesOnDeactivate = false
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true
+        panel.hasShadow = false
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         let host = TransparentHostingView(rootView: ControlView(model: model, onHeightChange: { [weak self] height in
             DispatchQueue.main.async { self?.resizePanel(height: height) }
