@@ -47,7 +47,7 @@ interrupted.rooms = [RoomReading(id: "layout-room", name: "测试空调", power:
     modes: [ControlOption(id: 0, label: "自动"), ControlOption(id: 1, label: "制冷"), ControlOption(id: 2, label: "除湿"), ControlOption(id: 3, label: "送风"), ControlOption(id: 4, label: "制热")],
     fans: [ControlOption(id: 0, label: "自动"), ControlOption(id: 1, label: "低风"), ControlOption(id: 2, label: "中风"), ControlOption(id: 3, label: "高风")],
     writable: [], minimum: 16, maximum: 32, step: 1, message: nil)]
-let hosting = NSHostingView(rootView: ControlView(model: interrupted, onHeightChange: { _ in }))
+let hosting = NSHostingView(rootView: ControlView(model: interrupted))
 hosting.sizingOptions = [.intrinsicContentSize]
 hosting.frame = NSRect(x: 0, y: 0, width: 376, height: 100)
 let controlHeight = hosting.fittingSize.height
@@ -66,7 +66,7 @@ print("Native layout: control \(Int(controlHeight)) / signed out \(Int(signedOut
 // Reproduce login/QR/room transitions inside the actual material container.
 // Exercise the legacy branch even on macOS 26 to catch wrapper sizing regressions.
 for useGlass in [true, false] {
-    let host = TransparentHostingView(rootView: ControlView(model: interrupted, onHeightChange: { _ in }))
+    let host = TransparentHostingView(rootView: ControlView(model: interrupted))
     host.sizingOptions = [.intrinsicContentSize]
     host.frame = NSRect(x: 0, y: 0, width: 376, height: 100)
     let container = PanelContentView(content: host, useLiquidGlass: useGlass)
@@ -94,6 +94,31 @@ for useGlass in [true, false] {
     window.close()
 }
 print("Native backdrop: Liquid Glass and legacy menu material follow all panel sizes")
+
+// The panel height follows content added after launch, such as the update banner.
+let bannerRuntime = testRuntime.appendingPathComponent("banner-test")
+try FileManager.default.createDirectory(at: bannerRuntime, withIntermediateDirectories: true)
+try seedAuthenticated(runtime: bannerRuntime)
+let bannerModel = AppModel(worker: fakeWorker, runtime: bannerRuntime)
+let bannerHost = TransparentHostingView(rootView: ControlView(model: bannerModel))
+bannerHost.sizingOptions = [.intrinsicContentSize]
+bannerHost.frame = NSRect(x: 0, y: 0, width: 376, height: 100)
+var followed: [CGFloat] = []
+bannerHost.onSizeChange = { DispatchQueue.main.async { followed.append(bannerHost.fittingSize.height) } }
+let bannerWindow = MenuPanel(contentRect: bannerHost.frame, styleMask: .borderless, backing: .buffered, defer: false)
+bannerWindow.isReleasedWhenClosed = false
+bannerWindow.contentView = PanelContentView(content: bannerHost)
+bannerWindow.orderFront(nil)
+RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.2))
+let withoutBanner = bannerHost.fittingSize.height
+Updater.shared.show("已是最新版本")
+RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.2))
+expect(followed.last.map { $0 > withoutBanner + 20 } == true, "Showing the update banner must report the taller panel height")
+Updater.shared.show(nil)
+RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.2))
+expect(followed.last.map { abs($0 - withoutBanner) < 1 } == true, "Hiding the update banner must report the original panel height")
+bannerWindow.close()
+print("Native layout: panel height follows the update banner")
 
 let cacheRuntime = testRuntime.appendingPathComponent("cache-test")
 try FileManager.default.createDirectory(at: cacheRuntime, withIntermediateDirectories: true)

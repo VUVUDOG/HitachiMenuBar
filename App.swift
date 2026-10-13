@@ -712,11 +712,6 @@ final class Updater: ObservableObject {
     }
 }
 
-private struct PanelHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 struct Surface: ViewModifier {
     var selected = false
     var radius: CGFloat = 12
@@ -736,7 +731,6 @@ struct QuietIconStyle: ButtonStyle {
 
 struct ControlView: View {
     @ObservedObject var model: AppModel
-    var onHeightChange: (CGFloat) -> Void
     @ObservedObject var updater = Updater.shared
     @State private var draft = 26.0
     static let accent = Color(red: 0.45, green: 0.84, blue: 0.77)
@@ -969,8 +963,6 @@ struct ControlView: View {
             .preferredColorScheme(.dark)
             .background(Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 20))
-            .background(GeometryReader { geometry in Color.clear.preference(key: PanelHeightKey.self, value: geometry.size.height) })
-            .onPreferenceChange(PanelHeightKey.self, perform: onHeightChange)
             .onAppear { draft = model.selected?.target ?? 26 }
             .onChange(of: model.selectedID) { _ in draft = model.selected?.target ?? 26 }
             .onChange(of: model.selected?.target) { value in draft = value ?? 26 }
@@ -984,6 +976,13 @@ final class MenuPanel: NSPanel {
 
 final class TransparentHostingView<Content: View>: NSHostingView<Content> {
     override var isOpaque: Bool { false }
+    // SwiftUI invalidates the intrinsic size whenever content is added or removed
+    // (rooms, QR code, update banner). The panel follows it from here.
+    var onSizeChange: (() -> Void)?
+    override func invalidateIntrinsicContentSize() {
+        super.invalidateIntrinsicContentSize()
+        onSizeChange?()
+    }
 }
 
 // The backdrop and SwiftUI content share the exact same bounds. Measure the
@@ -1075,10 +1074,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.backgroundColor = .clear
         panel.hasShadow = false
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
-        let host = TransparentHostingView(rootView: ControlView(model: model, onHeightChange: { [weak self] height in
-            DispatchQueue.main.async { self?.resizePanel(height: height) }
-        }))
+        let host = TransparentHostingView(rootView: ControlView(model: model))
         host.sizingOptions = [.intrinsicContentSize]
+        host.onSizeChange = { [weak self, weak host] in
+            DispatchQueue.main.async { if let host = host { self?.resizePanel(height: host.fittingSize.height) } }
+        }
         host.wantsLayer = true
         host.layer?.backgroundColor = NSColor.clear.cgColor
         host.frame = panel.contentRect(forFrameRect: panel.frame)
