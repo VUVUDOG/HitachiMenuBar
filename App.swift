@@ -115,10 +115,6 @@ final class AppModel: ObservableObject {
     var controlling: Bool { active && process?.arguments?.contains("--field") == true }
     var canLogout: Bool { authState == "authenticated" || authState == "pending" || !rooms.isEmpty }
 
-    static func degrees(_ value: Double) -> String {
-        value.rounded() == value ? "\(Int(value))" : String(format: "%.1f", value)
-    }
-
     static func translated(_ text: String) -> String {
         let map = ["cool": "制冷", "heat": "制热", "dry": "除湿", "fan": "送风", "auto": "自动",
                    "low": "低风", "medium": "中风", "high": "高风"]
@@ -187,9 +183,7 @@ final class AppModel: ObservableObject {
                     power: values["on"] as? Bool, target: values["target-temperature"] as? Double,
                     mode: values["mode"] as? Int, fan: values["fan-level"] as? Int,
                     modes: options("mode"), fans: options("fan-level"), writable: writable,
-                    // Half degrees are offered until the unit has rejected one (see probe.py).
-                    minimum: limits[0], maximum: limits[1],
-                    step: item["half_step"] as? Bool == false ? limits[2] : min(limits[2], 0.5), message: item["message"] as? String,
+                    minimum: limits[0], maximum: limits[1], step: limits[2], message: item["message"] as? String,
                     indoor: (item["climate"] as? [String: Any])?["temperature"] as? Double,
                     humidity: (item["climate"] as? [String: Any])?["humidity"] as? Double)
             }
@@ -204,7 +198,7 @@ final class AppModel: ObservableObject {
 
     func updateTitle() {
         if let room = selected, let temp = room.target {
-            titleChanged?(room.power == true ? " \(Self.degrees(temp))°" : " 空调")
+            titleChanged?(room.power == true ? " \(Int(temp))°" : " 空调")
         } else { titleChanged?(" 空调") }
     }
 
@@ -640,7 +634,7 @@ struct ControlView: View {
             }
             VStack(spacing: 1) {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(room.target == nil ? "—" : AppModel.degrees(draft))
+                    Text(room.target == nil ? "—" : "\(Int(draft))")
                         .font(.system(size: 64, weight: .light, design: .rounded)).monospacedDigit()
                     Text("°C").font(.system(size: 24, weight: .light)).foregroundStyle(.white.opacity(0.55))
                 }

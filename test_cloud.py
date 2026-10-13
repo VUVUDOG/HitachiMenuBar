@@ -45,7 +45,7 @@ class CloudTests(unittest.TestCase):
 
     def test_control_validates_before_sending(self):
         cloud = XiaomiCloud()
-        for value in [15, 33, 26.25, True, "26"]:
+        for value in [15, 33, 26.5, True, "26"]:
             with self.assertRaises(CloudError):
                 cloud.set_property({"did": "test"}, self.control_spec(), "target-temperature", value)
         for field in ["fault", "serial-number", "unknown"]:

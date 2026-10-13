@@ -167,20 +167,8 @@ def main(argv=None):
                     raise CloudError("没有找到已验证的空调设备")
                 status("controlling", "正在发送指令并确认设备状态…")
                 item = matches[0]
-                changes = {field: json.loads(value) for field, value in zip(args.field, args.value)}
-                half = changes.get("target-temperature")
-                half = isinstance(half, float) and not half.is_integer()
-                try:
-                    cloud.set_properties(item["device"], item["spec"], changes)
-                except CloudError:
-                    if not half:
-                        raise
-                    # The unit rejected or rounded a half degree: remember it and use whole degrees.
-                    item["half_step"] = False
-                    write_json("report.json", report)
-                    raise CloudError("这台空调不支持 0.5 度调节，之后改为按 1 度调节")
-                if half:
-                    item["half_step"] = True
+                cloud.set_properties(item["device"], item["spec"],
+                                     {field: json.loads(value) for field, value in zip(args.field, args.value)})
                 # Only the controlled room changed; other rooms keep their last reading.
                 targets = [item]
             else:
