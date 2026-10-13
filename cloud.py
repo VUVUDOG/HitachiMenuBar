@@ -37,6 +37,8 @@ class XiaomiCloud:
         self.agent = "Android-7.1.1-1.0.0-ONEPLUS A3010-136-HITACHIMENUBAR APP/xiaomi.smarthome APPV/62830"
         self.session.headers["User-Agent"] = self.agent
         self.credentials = credentials
+        self.device_rooms = {}
+        self._instances = None
 
     @staticmethod
     def account_url(url):
@@ -182,6 +184,9 @@ class XiaomiCloud:
             "fetch_cariot": True, "limit": 300, "app_ver": 7, "plat_form": 0}) or {}
         homes = list(merged.get("homelist") or [])
         homes += list(merged.get("share_home_list") or [])
+        # Remember each device's MiJia room so sensors can be paired with air conditioners.
+        self.device_rooms = {did: room.get("name") for home in homes for room in home.get("roomlist") or []
+                             if room.get("name") for did in room.get("dids") or []}
         baseline = self.api("home/device_list", {
             "getVirtualModel": True, "getHuamiDevices": 1,
             "get_split_device": False, "support_smart_home": True}) or {}
@@ -211,10 +216,12 @@ class XiaomiCloud:
         return list(devices.values())
 
     def spec(self, model):
-        response = self.session.get("https://miot-spec.org/miot-spec-v2/instances",
-                                    params={"status": "all"}, timeout=30)
-        response.raise_for_status()
-        matches = [i for i in response.json().get("instances", []) if i.get("model") == model]
+        if self._instances is None:
+            response = self.session.get("https://miot-spec.org/miot-spec-v2/instances",
+                                        params={"status": "all"}, timeout=30)
+            response.raise_for_status()
+            self._instances = response.json().get("instances", [])
+        matches = [i for i in self._instances if i.get("model") == model]
         if not matches:
             return None
         urn = max(matches, key=lambda i: i.get("version", 0))["type"]
@@ -237,3 +244,28 @@ class XiaomiCloud:
         for start in range(0, len(properties), 10):
             values += self.api("miotspec/prop/get", {"params": properties[start:start + 10]}) or []
         return values
+
+    @staticmethod
+    def climate_fields(spec):
+        """Locate readable indoor temperature / humidity properties (never target temperature)."""
+        fields = {}
+        for service in spec.get("services", []):
+            for prop in service.get("properties", []):
+                kind = prop.get("type", "").split(":")[3] if prop.get("type", "").count(":") >= 3 else ""
+                if kind in ("temperature", "relative-humidity") and "read" in prop.get("access", []):
+                    fields.setdefault(kind, [service["iid"], prop["iid"]])
+        return fields
+
+    def read_climate(self, did, fields):
+        """Read cached sensor values; returns ({field: value}, {field: code})."""
+        query = [{"did": did, "siid": siid, "piid": piid} for siid, piid in fields.values()]
+        if not query:
+            return {}, {}
+        state = self.api("miotspec/prop/get", {"params": query}) or []
+        values, codes = {}, {}
+        for field, (siid, piid) in fields.items():
+            match = next((p for p in state if p.get("siid") == siid and p.get("piid") == piid), {})
+            codes[field] = match.get("code", "missing")
+            if match.get("code") == 0 and isinstance(match.get("value"), (int, float)):
+                values[field] = match["value"]
+        return values, codes

@@ -33,6 +33,8 @@ struct RoomReading: Identifiable {
     let maximum: Double
     let step: Double
     let message: String?
+    var indoor: Double? = nil
+    var humidity: Double? = nil
 }
 
 final class AppModel: ObservableObject {
@@ -181,7 +183,9 @@ final class AppModel: ObservableObject {
                     power: values["on"] as? Bool, target: values["target-temperature"] as? Double,
                     mode: values["mode"] as? Int, fan: values["fan-level"] as? Int,
                     modes: options("mode"), fans: options("fan-level"), writable: writable,
-                    minimum: limits[0], maximum: limits[1], step: limits[2], message: item["message"] as? String)
+                    minimum: limits[0], maximum: limits[1], step: limits[2], message: item["message"] as? String,
+                    indoor: (item["climate"] as? [String: Any])?["temperature"] as? Double,
+                    humidity: (item["climate"] as? [String: Any])?["humidity"] as? Double)
             }
             if !rooms.contains(where: { $0.id == selectedID }) { selectedID = rooms.first?.id ?? "" }
         }
@@ -588,6 +592,10 @@ struct ControlView: View {
                         Image(systemName: roomIcon(room.name)).font(.system(size: 13)).frame(width: 18)
                         Text(room.name.replacingOccurrences(of: "空调", with: "")).font(.system(size: 12, weight: .medium)).lineLimit(1)
                         Spacer(minLength: 0)
+                        if let indoor = room.indoor {
+                            Text(String(format: "%.1f°", indoor)).font(.system(size: 11)).monospacedDigit()
+                                .foregroundStyle(.white.opacity(selected ? 0.75 : 0.45))
+                        }
                         Circle().fill(room.power == true ? Self.accent : Color.white.opacity(0.2)).frame(width: 5, height: 5)
                     }.foregroundStyle(selected ? Self.accent : .white.opacity(0.65))
                         .padding(.horizontal, 12).padding(.vertical, 10).modifier(Surface(selected: selected))
@@ -605,6 +613,13 @@ struct ControlView: View {
                         Circle().fill(room.power == true ? Self.accent : .secondary).frame(width: 4, height: 4)
                         Text(room.power.map { $0 ? "正在运行" : "已关机" } ?? "状态暂不可用")
                             .font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                    if let indoor = room.indoor {
+                        HStack(spacing: 4) {
+                            Image(systemName: "thermometer.medium").font(.system(size: 10))
+                            Text("室温 " + String(format: "%.1f°", indoor) + (room.humidity.map { " · 湿度 \(Int($0.rounded()))%" } ?? ""))
+                                .font(.system(size: 11)).monospacedDigit()
+                        }.foregroundStyle(.white.opacity(0.7))
                     }
                 }
                 Spacer()
