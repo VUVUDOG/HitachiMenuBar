@@ -1,6 +1,6 @@
 # 安装与使用
 
-[下载最新版](https://github.com/VUVUDOG/HitachiMenuBar/releases/latest)。本说明对应 **v0.4.0**，截图沿用 v0.3.4 界面（不含新增的室温与更新提示）。
+[下载最新版](https://github.com/VUVUDOG/HitachiMenuBar/releases/latest)。本说明对应 **v0.4.1**，截图沿用 v0.3.4 界面（不含新增的室温与更新提示）。
 
 [PDF 图文指南](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.pdf) · [离线网页版](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.html) · [长图](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.png) · [含两种安装包的分享包](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-sharing-kit.zip)
 
@@ -56,7 +56,7 @@
 
 没有房间时检查米家账号和手机设备列表，再「同步房间」。状态异常时看底部提示，检查设备在线并手动刷新。提示登录失效后重新扫码；钥匙串权限问题先完成授权。
 
-v0.4.0 起，发现新版本时面板会出现「发现新版本」，点击「更新」自动下载、校验并重新打开；也可在齿轮菜单「检查更新」。校验不通过会取消安装，当前版本不受影响。v0.3.x 需手动下载 v0.4.0：从齿轮退出应用，再替换旧版本。有效会话通常保留，新版本可能需要重新钥匙串授权。
+v0.4.0 起，发现新版本时面板会出现「发现新版本」，点击「更新」自动下载、校验并重新打开；也可在齿轮菜单「检查更新」。校验不通过会取消安装，当前版本不受影响。v0.4.1 起检查更新不受 GitHub API 匿名限额影响；v0.4.0 在共享网络下偶尔可能提示「检查更新失败」，稍后重试即可。v0.3.x 需手动下载新版本：从齿轮退出应用，再替换旧版本。有效会话通常保留，新版本可能需要重新钥匙串授权。
 
 需要开机自动运行时，在齿轮菜单打开「开机自动启动」；首次开启如系统要求，在「系统设置 → 通用 → 登录项」中允许。
 

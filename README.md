@@ -12,8 +12,8 @@ v0.3.4 的真实控制视图，在 macOS 26 上使用原生 Liquid Glass 渲染�
 
 | Mac 类型 | 下载 |
 | --- | --- |
-| Apple Silicon（M 系列） | [arm64.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.0/HitachiMenuBar-0.4.0-arm64.zip) |
-| Intel 处理器 | [intel.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.0/HitachiMenuBar-0.4.0-intel.zip) |
+| Apple Silicon（M 系列） | [arm64.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.1/HitachiMenuBar-0.4.1-arm64.zip) |
+| Intel 处理器 | [intel.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.1/HitachiMenuBar-0.4.1-intel.zip) |
 
 [全部版本与图文指南](https://github.com/VUVUDOG/HitachiMenuBar/releases) · [安装使用说明](docs/usage.md)
 
@@ -26,7 +26,7 @@ v0.3.4 图文指南（界面与安装步骤仍适用）：[PDF](https://github.c
 
 安装包包含运行环境，无需安装 Python、uv 或开发工具。每台 Mac 各自登录。
 
-从 **v0.4.0** 起支持应用内更新：启动时及每 24 小时检查一次 GitHub 最新版本，面板出现「发现新版本」后点击「更新」即可自动下载、校验、替换并重新打开。v0.3.x 用户需手动下载一次 v0.4.0。
+从 **v0.4.0** 起支持应用内更新：启动时及每 24 小时检查一次 GitHub 最新版本，面板出现「发现新版本」后点击「更新」即可自动下载、校验、替换并重新打开。v0.4.1 起通过发布页跳转识别新版本，不受 GitHub API 每小时 60 次的匿名限额影响，代理或共享网络下也能正常检查。v0.3.x 用户需手动下载一次新版本。
 
 ## 系统玻璃外观
 

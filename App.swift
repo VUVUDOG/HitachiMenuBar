@@ -545,10 +545,12 @@ final class Updater: ObservableObject {
         return false
     }
 
-    // Test hook: HITACHI_UPDATE_FEED points the check at a local release feed, and
+    // The release page redirect (…/releases/latest → …/releases/tag/vX.Y.Z) is not
+    // subject to the 60-requests-per-hour API limit shared by everyone behind one IP.
+    // Test hook: HITACHI_UPDATE_BASE points at a local mirror of that layout, and
     // HITACHI_UPDATE_INSTALL=1 installs whatever it finds. Unset for normal users.
-    static let feed = ProcessInfo.processInfo.environment["HITACHI_UPDATE_FEED"].flatMap(URL.init)
-        ?? URL(string: "https://api.github.com/repos/\(repository)/releases/latest")!
+    static let base = ProcessInfo.processInfo.environment["HITACHI_UPDATE_BASE"]
+        ?? "https://github.com/\(repository)"
 
     func start() {
         check(manual: false)
@@ -581,27 +583,27 @@ final class Updater: ObservableObject {
         guard state == "idle" else { return }
         state = "checking"
         if manual { show("正在检查更新…") }
-        var request = URLRequest(url: Self.feed)
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        var request = URLRequest(url: URL(string: Self.base + "/releases/latest")!)
+        request.httpMethod = "HEAD"
         request.timeoutInterval = 20
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
-            let release = data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+        URLSession.shared.dataTask(with: request) { [weak self] _, response, _ in
+            let final = response as? HTTPURLResponse
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.state = "idle"
-                guard (response as? HTTPURLResponse)?.statusCode == 200, let release = release,
-                      let tag = release["tag_name"] as? String else {
+                guard final?.statusCode == 200, let url = final?.url,
+                      url.deletingLastPathComponent().lastPathComponent == "tag",
+                      url.lastPathComponent.hasPrefix("v") else {
                     if manual { self.show("检查更新失败，请稍后再试", for: 5) }
                     return
                 }
-                let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
-                let assets = release["assets"] as? [[String: Any]] ?? []
-                func url(_ name: String) -> URL? {
-                    (assets.first { $0["name"] as? String == name }?["browser_download_url"] as? String).flatMap(URL.init)
-                }
-                let asset = url("HitachiMenuBar-\(version)-\(Self.assetSuffix).zip")
-                if Self.isNewer(version, than: AppModel.version), let asset = asset {
-                    self.latest = version; self.asset = asset; self.checksums = url("SHA256SUMS.txt")
+                let tag = url.lastPathComponent
+                let version = String(tag.dropFirst())
+                if Self.isNewer(version, than: AppModel.version) {
+                    let download = Self.base + "/releases/download/" + tag + "/"
+                    self.latest = version
+                    self.asset = URL(string: download + "HitachiMenuBar-\(version)-\(Self.assetSuffix).zip")
+                    self.checksums = URL(string: download + "SHA256SUMS.txt")
                     if manual { self.show(nil) }
                     if ProcessInfo.processInfo.environment["HITACHI_UPDATE_INSTALL"] == "1" { self.install() }
                 } else {
