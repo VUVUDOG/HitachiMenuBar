@@ -38,8 +38,9 @@ def main(argv=None):
     parser.add_argument("--logout", action="store_true", help="退出登录并清除本机设备缓存")
     parser.add_argument("--refresh", action="store_true", help="刷新已发现设备的状态")
     parser.add_argument("--room", help="指定已发现设备的标识")
-    parser.add_argument("--field", choices=["on", "mode", "target-temperature", "fan-level"])
-    parser.add_argument("--value", help="JSON 控制值")
+    parser.add_argument("--field", action="append", choices=["on", "mode", "target-temperature", "fan-level"],
+                        help="控制属性，可重复；与 --value 按顺序配对")
+    parser.add_argument("--value", action="append", help="JSON 控制值，可重复")
     parser.add_argument("--import-session", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--session-stdin", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--session-output", action="store_true", help=argparse.SUPPRESS)
@@ -90,22 +91,26 @@ def main(argv=None):
             # The native app captures this pipe privately. No credentials go in
             # argv, environment, logs, status.json or other runtime files.
             print(json.dumps({"generation": store.generation, "session": cloud.credentials}), flush=True)
-        if args.room or args.field or args.value is not None or args.refresh:
+        if args.room or args.field or args.value or args.refresh:
             if not (RUNTIME / "report.json").exists():
                 raise CloudError("请先同步空调设备")
             report = json.loads((RUNTIME / "report.json").read_text())
-            if args.room or args.field or args.value is not None:
-                if not all((args.room, args.field, args.value is not None)):
+            targets = report["devices"]
+            if args.room or args.field or args.value:
+                if not (args.room and args.field and args.value and len(args.field) == len(args.value)):
                     raise CloudError("控制指令缺少房间、属性或数值")
                 matches = [d for d in report["devices"] if d["device"]["did"] == args.room]
                 if len(matches) != 1 or not matches[0].get("spec"):
                     raise CloudError("没有找到已验证的空调设备")
                 status("controlling", "正在发送指令并确认设备状态…")
                 item = matches[0]
-                cloud.set_property(item["device"], item["spec"], args.field, json.loads(args.value))
+                cloud.set_properties(item["device"], item["spec"],
+                                     {field: json.loads(value) for field, value in zip(args.field, args.value)})
+                # Only the controlled room changed; other rooms keep their last reading.
+                targets = [item]
             else:
                 status("reading", "正在刷新空调状态…")
-            for item in report["devices"]:
+            for item in targets:
                 if item.get("spec"):
                     item["state"] = cloud.read_state(item["device"], item["spec"])
             report["read_at"] = time.time()

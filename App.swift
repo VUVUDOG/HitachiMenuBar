@@ -17,13 +17,15 @@ final class ApplicationLease {
 }
 
 struct ControlOption: Identifiable { let id: Int; let label: String }
+// Changes for one room that have been sent, or are waiting to be sent, to the cloud.
+struct ControlCommand { let room: String; var changes: [String: AnyHashable] }
 struct RoomReading: Identifiable {
     let id: String
     let name: String
-    let power: Bool?
-    let target: Double?
-    let mode: Int?
-    let fan: Int?
+    var power: Bool?
+    var target: Double?
+    var mode: Int?
+    var fan: Int?
     let modes: [ControlOption]
     let fans: [ControlOption]
     let writable: Set<String>
@@ -40,7 +42,14 @@ final class AppModel: ObservableObject {
     @Published var rooms: [RoomReading] = []
     @Published var selectedID = UserDefaults.standard.string(forKey: "selectedRoom") ?? ""
     @Published var readAt: Date?
-    @Published var active = false
+    @Published var active = false {
+        didSet { if oldValue && !active { DispatchQueue.main.async { [weak self] in self?.workerFinished() } } }
+    }
+    // Optimistic control state: the UI shows these values immediately. `pending`
+    // collects the latest intent per room and field; `inFlight` is being sent.
+    @Published var pending: [String: [String: AnyHashable]] = [:]
+    @Published var inFlight: ControlCommand?
+    var flushWork: DispatchWorkItem?
     @Published var authState = "legacy"
     let runtime: URL
     let worker: URL
@@ -87,7 +96,19 @@ final class AppModel: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.poll() }
     }
 
-    var selected: RoomReading? { rooms.first { $0.id == selectedID } ?? rooms.first }
+    var displayRooms: [RoomReading] { rooms.map(overlaid) }
+    var selected: RoomReading? { (rooms.first { $0.id == selectedID } ?? rooms.first).map(overlaid) }
+
+    func overlaid(_ reading: RoomReading) -> RoomReading {
+        var room = reading
+        var changes = inFlight?.room == room.id ? inFlight?.changes ?? [:] : [:]
+        changes.merge(pending[room.id] ?? [:]) { $1 }
+        if let value = changes["on"]?.base as? Bool { room.power = value }
+        if let value = changes["target-temperature"]?.base as? Double { room.target = value }
+        if let value = changes["mode"]?.base as? Int { room.mode = value }
+        if let value = changes["fan-level"]?.base as? Int { room.fan = value }
+        return room
+    }
     var busy: Bool { active || ["starting", "authenticating", "awaiting_scan", "reading", "controlling"].contains(phase) }
     var controlling: Bool { active && process?.arguments?.contains("--field") == true }
     var canLogout: Bool { authState == "authenticated" || authState == "pending" || !rooms.isEmpty }
@@ -168,6 +189,10 @@ final class AppModel: ObservableObject {
         if active && phase == "authenticating", let startedAt = startedAt, Date().timeIntervalSince(startedAt) > 12 {
             message = "请允许系统钥匙串访问，或从设置重新扫码登录"
         }
+        updateTitle()
+    }
+
+    func updateTitle() {
         if let room = selected, let temp = room.target {
             titleChanged?(room.power == true ? " \(Int(temp))°" : " 空调")
         } else { titleChanged?(" 空调") }
@@ -367,6 +392,8 @@ final class AppModel: ObservableObject {
     func invalidateSession() -> Bool {
         guard !controlling else { return false }
         let previousProcess = process
+        flushWork?.cancel(); flushWork = nil
+        pending = [:]; inFlight = nil
         authorizationID = nil
         process = nil
         active = false
@@ -409,15 +436,77 @@ final class AppModel: ObservableObject {
         run(arguments: ["--logout"], label: "正在退出登录…")
     }
     func refresh(automatic: Bool = false) {
-        guard !automatic || !automaticRefreshSuspended else { return }
+        guard !automatic || (!automaticRefreshSuspended && pending.isEmpty && inFlight == nil) else { return }
         run(arguments: rooms.isEmpty ? [] : ["--refresh"], label: "正在刷新状态…")
     }
     func resync() { run(arguments: [], label: "正在同步房间列表…") }
-    func set(_ field: String, value: Any) {
-        guard let room = selected, room.writable.contains(field),
-              let data = try? JSONSerialization.data(withJSONObject: value, options: [.fragmentsAllowed]),
-              let json = String(data: data, encoding: .utf8) else { return }
-        run(arguments: ["--room", room.id, "--field", field, "--value", json], label: "正在更新\(room.name)…")
+    // Record the intent immediately; repeated taps replace the queued value
+    // instead of being dropped while an earlier command is still running.
+    func set(_ field: String, value: AnyHashable, delay: TimeInterval = 0.05) {
+        guard let room = selected, room.writable.contains(field) else { return }
+        var changes = pending[room.id] ?? [:]
+        let reported = rooms.first { $0.id == room.id }.map(reportedValue(field)) ?? nil
+        if inFlight?.room != room.id || inFlight?.changes[field] == nil, reported == value {
+            changes[field] = nil
+        } else {
+            changes[field] = value
+        }
+        pending[room.id] = changes.isEmpty ? nil : changes
+        updateTitle()
+        scheduleFlush(after: delay)
+    }
+
+    func reportedValue(_ field: String) -> (RoomReading) -> AnyHashable? {
+        { room in
+            switch field {
+            case "on": return room.power.map(AnyHashable.init)
+            case "target-temperature": return room.target.map(AnyHashable.init)
+            case "mode": return room.mode.map(AnyHashable.init)
+            default: return room.fan.map(AnyHashable.init)
+            }
+        }
+    }
+
+    func scheduleFlush(after delay: TimeInterval) {
+        flushWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.flush() }
+        flushWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }
+
+    func flush() {
+        flushWork = nil
+        guard inFlight == nil, !busy, !pending.isEmpty else { return }
+        let id = pending[selectedID] != nil ? selectedID : pending.keys.sorted()[0]
+        guard let room = rooms.first(where: { $0.id == id }), let changes = pending[id] else { pending[id] = nil; return }
+        var arguments = ["--room", id]
+        for field in ["on", "mode", "target-temperature", "fan-level"] {
+            guard let value = changes[field], let data = try? JSONSerialization.data(withJSONObject: value.base, options: [.fragmentsAllowed]),
+                  let json = String(data: data, encoding: .utf8) else { continue }
+            arguments += ["--field", field, "--value", json]
+        }
+        inFlight = ControlCommand(room: id, changes: changes)
+        pending[id] = nil
+        run(arguments: arguments, label: "正在同步到\(room.name)…")
+        if !active { workerFinished() }
+    }
+
+    // Success keeps the cloud reading; failure drops the optimistic values so
+    // the panel returns to the last confirmed state. Newer intents still go out.
+    func workerFinished() {
+        guard !active else { return }
+        if let command = inFlight {
+            inFlight = nil
+            if phase != "complete" {
+                pending[command.room] = pending[command.room]?.filter { command.changes[$0.key] == nil || $0.value != command.changes[$0.key] }
+                if pending[command.room]?.isEmpty == true { pending[command.room] = nil }
+                if let name = rooms.first(where: { $0.id == command.room })?.name, !message.contains(name) {
+                    message = "\(name)未调整成功，已恢复原状态：\(message)"
+                }
+            }
+            updateTitle()
+        }
+        if !pending.isEmpty { scheduleFlush(after: 0.05) }
     }
 }
 
@@ -465,7 +554,7 @@ struct ControlView: View {
                 .background(Self.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 4) {
                 Text("日立空调").font(.system(size: 16, weight: .semibold))
-                Text(model.rooms.isEmpty ? "让舒适触手可及" : "\(model.rooms.count) 个房间 · \(model.rooms.filter { $0.power == true }.count) 台运行")
+                Text(model.rooms.isEmpty ? "让舒适触手可及" : "\(model.rooms.count) 个房间 · \(model.displayRooms.filter { $0.power == true }.count) 台运行")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer()
@@ -492,7 +581,7 @@ struct ControlView: View {
 
     var roomTabs: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(model.rooms) { room in
+            ForEach(model.displayRooms) { room in
                 let selected = model.selectedID == room.id
                 Button { model.selectedID = room.id; model.poll() } label: {
                     HStack(spacing: 8) {
@@ -524,31 +613,31 @@ struct ControlView: View {
                         .foregroundStyle(room.power == true ? Self.accent : .white.opacity(0.6))
                         .background(room.power == true ? Self.accent.opacity(0.16) : Color.white.opacity(0.055), in: Circle())
                         .overlay(Circle().strokeBorder(Color.white.opacity(0.06)))
-                }.buttonStyle(.plain).disabled(model.busy || !room.writable.contains("on"))
+                }.buttonStyle(.plain).disabled(!room.writable.contains("on"))
                     .help(room.power == true ? "关闭空调" : "开启空调")
                     .accessibilityLabel(room.power == true ? "关闭空调" : "开启空调")
             }
             VStack(spacing: 1) {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(room.target.map { "\(Int($0))" } ?? "—")
+                    Text(room.target == nil ? "—" : "\(Int(draft))")
                         .font(.system(size: 64, weight: .light, design: .rounded)).monospacedDigit()
                     Text("°C").font(.system(size: 24, weight: .light)).foregroundStyle(.white.opacity(0.55))
                 }
                 Text("设定温度").font(.system(size: 11)).foregroundStyle(.secondary)
             }.frame(maxWidth: .infinity)
             HStack(spacing: 12) {
-                Button { model.set("target-temperature", value: max(room.minimum, (room.target ?? draft) - room.step)) } label: {
+                Button { model.set("target-temperature", value: max(room.minimum, (room.target ?? draft) - room.step), delay: 0.6) } label: {
                     Image(systemName: "minus").font(.system(size: 13, weight: .medium)).frame(width: 32, height: 32)
                 }.buttonStyle(QuietIconStyle()).help("降低温度").accessibilityLabel("降低温度")
-                    .disabled(model.busy || !room.writable.contains("target-temperature") || (room.target ?? room.minimum) <= room.minimum)
+                    .disabled(!room.writable.contains("target-temperature") || (room.target ?? room.minimum) <= room.minimum)
                 Slider(value: $draft, in: room.minimum...room.maximum, step: room.step) { editing in
-                    if !editing { model.set("target-temperature", value: draft) }
-                }.tint(Self.accent).disabled(model.busy || !room.writable.contains("target-temperature"))
+                    if !editing { model.set("target-temperature", value: draft, delay: 0.3) }
+                }.tint(Self.accent).disabled(!room.writable.contains("target-temperature"))
                     .accessibilityLabel("设定温度")
-                Button { model.set("target-temperature", value: min(room.maximum, (room.target ?? draft) + room.step)) } label: {
+                Button { model.set("target-temperature", value: min(room.maximum, (room.target ?? draft) + room.step), delay: 0.6) } label: {
                     Image(systemName: "plus").font(.system(size: 13, weight: .medium)).frame(width: 32, height: 32)
                 }.buttonStyle(QuietIconStyle()).help("提高温度").accessibilityLabel("提高温度")
-                    .disabled(model.busy || !room.writable.contains("target-temperature") || (room.target ?? room.maximum) >= room.maximum)
+                    .disabled(!room.writable.contains("target-temperature") || (room.target ?? room.maximum) >= room.maximum)
             }
         }.padding(16)
             .background(LinearGradient(colors: [Self.accent.opacity(0.055), Color.white.opacity(0.02)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 18))
@@ -567,7 +656,7 @@ struct ControlView: View {
                             Text(option.label).font(.system(size: 11, weight: .medium))
                         }.foregroundStyle(selected ? Self.accent : .white.opacity(0.6))
                             .frame(maxWidth: .infinity).padding(.vertical, 9).modifier(Surface(selected: selected, radius: 10))
-                    }.buttonStyle(.plain).disabled(model.busy || !room.writable.contains("mode"))
+                    }.buttonStyle(.plain).disabled(!room.writable.contains("mode"))
                 }
             }
             Text("风量").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary).padding(.top, 5)
@@ -578,7 +667,7 @@ struct ControlView: View {
                         Text(option.label).font(.system(size: 11, weight: .medium))
                             .foregroundStyle(selected ? Self.accent : .white.opacity(0.6))
                             .frame(maxWidth: .infinity).padding(.vertical, 9).modifier(Surface(selected: selected, radius: 9))
-                    }.buttonStyle(.plain).disabled(model.busy || !room.writable.contains("fan-level"))
+                    }.buttonStyle(.plain).disabled(!room.writable.contains("fan-level"))
                 }
             }
         }
@@ -614,7 +703,7 @@ struct ControlView: View {
 
     var footer: some View {
         HStack(spacing: 9) {
-            if model.busy { ProgressView().controlSize(.mini).frame(width: 12) }
+            if model.busy || !model.pending.isEmpty { ProgressView().controlSize(.mini).frame(width: 12) }
             else { Circle().fill(model.phase == "error" ? Color.orange : Self.accent.opacity(0.75)).frame(width: 5, height: 5) }
             VStack(alignment: .leading, spacing: 4) {
                 Text(model.message).font(.system(size: 11)).foregroundStyle(model.phase == "error" ? .orange : .secondary)

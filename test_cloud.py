@@ -72,5 +72,25 @@ class CloudTests(unittest.TestCase):
         self.assertEqual(sent[0], ("miotspec/prop/set", {"params": [{"did": "test", "siid": 2, "piid": 4, "value": 27}]}))
 
 
+    def test_multiple_controls_share_one_request_and_readback(self):
+        cloud = XiaomiCloud()
+        spec = self.control_spec()
+        spec["services"][0]["properties"].append({"iid": 2, "type": "urn:miot-spec-v2:property:mode:00000008",
+                                                  "format": "uint8", "access": ["read", "write"],
+                                                  "value-list": [{"value": 1}, {"value": 2}]})
+        sent, reads = [], []
+        def request(path, payload):
+            sent.append(payload)
+            return [{"code": 0}, {"code": 0}]
+        def api(path, payload):
+            reads.append(payload)
+            return [{"siid": 2, "piid": 4, "code": 0, "value": 27}, {"siid": 2, "piid": 2, "code": 0, "value": 2}]
+        cloud._request, cloud.api = request, api
+        with patch("cloud.time.sleep"):
+            cloud.set_properties({"did": "test"}, spec, {"target-temperature": 27, "mode": 2})
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(len(sent[0]["params"]), 2)
+        self.assertEqual(len(reads), 1)
+
 if __name__ == "__main__":
     unittest.main()

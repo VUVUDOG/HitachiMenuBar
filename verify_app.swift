@@ -192,6 +192,52 @@ legacy.refresh(); finish(legacy)
 expect(legacy.authState == "authenticated" && legacy.sessionData != nil && legacy.keychainReads == 1,
     "Native reader must preserve an existing legacy session")
 
+// Controls update the panel immediately, merge repeated taps, and revert on failure.
+let controlRuntime = testRuntime.appendingPathComponent("control-test")
+try FileManager.default.createDirectory(at: controlRuntime, withIntermediateDirectories: true)
+try seedAuthenticated(runtime: controlRuntime)
+let controlSpec: [String: Any] = ["services": [["iid": 2, "type": "urn:miot-spec-v2:service:air-conditioner:1", "properties": [
+    ["iid": 1, "type": "urn:miot-spec-v2:property:on:1", "format": "bool", "access": ["read", "write"]],
+    ["iid": 2, "type": "urn:miot-spec-v2:property:mode:1", "access": ["read", "write"],
+     "value-list": [["value": 1, "description": "Cool"], ["value": 2, "description": "Heat"]]],
+    ["iid": 4, "type": "urn:miot-spec-v2:property:target-temperature:1", "access": ["read", "write"], "value-range": [16, 32, 1]]]]]]
+let controlState: [[String: Any]] = [["siid": 2, "piid": 1, "code": 0, "value": true],
+    ["siid": 2, "piid": 2, "code": 0, "value": 1], ["siid": 2, "piid": 4, "code": 0, "value": 26.0]]
+try saveFixture("report.json", ["devices": [["device": ["did": "test-room", "name": "测试空调"], "spec": controlSpec, "state": controlState]]], runtime: controlRuntime)
+let control = AppModel(worker: URL(fileURLWithPath: CommandLine.arguments[2]), runtime: controlRuntime,
+    credentialReader: { _ in (errSecSuccess, testSessionData) })
+func controls() -> [[String]] {
+    guard let text = try? String(contentsOf: controlRuntime.appendingPathComponent("controls.jsonl"), encoding: .utf8) else { return [] }
+    return text.split(separator: "\n").map { try! JSONSerialization.jsonObject(with: Data($0.utf8)) as! [String] }
+}
+func settle(_ model: AppModel) {
+    let deadline = Date(timeIntervalSinceNow: 6)
+    while (model.active || model.inFlight != nil || !model.pending.isEmpty) && Date() < deadline {
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.02))
+    }
+    expect(!model.active && model.inFlight == nil && model.pending.isEmpty, "Queued controls must drain")
+}
+expect(control.selected?.target == 26, "Control fixture must load the reported temperature")
+for value in [27.0, 28.0, 29.0] { control.set("target-temperature", value: value, delay: 0.6) }
+expect(control.selected?.target == 29 && !control.active, "Taps must show immediately and wait for the debounce")
+settle(control)
+expect(controls().count == 1 && Array(controls()[0][2..<6]) == ["--field", "target-temperature", "--value", "29"],
+    "Repeated temperature taps must send only the final value")
+control.set("target-temperature", value: 27.0)
+control.flush()
+expect(control.inFlight != nil, "First control must start")
+control.set("mode", value: 2)
+expect(control.selected?.mode == 2, "Taps during a running command must not be dropped")
+settle(control)
+expect(controls().count == 3 && controls()[2].contains("mode"), "A tap made during a running command must be sent afterwards")
+control.set("target-temperature", value: 26.0)
+control.set("target-temperature", value: 28.0); settle(control)
+try Data().write(to: controlRuntime.appendingPathComponent("fail-control"))
+control.set("target-temperature", value: 31.0)
+expect(control.selected?.target == 31, "Failure case must first show the optimistic value")
+settle(control)
+expect(control.selected?.target == 26 && control.message.contains("未调整成功"), "A failed control must revert to the reported state")
+
 let leaseRuntime = testRuntime.appendingPathComponent("lease-test")
 try FileManager.default.createDirectory(at: leaseRuntime, withIntermediateDirectories: true)
 var lease = ApplicationLease(runtime: leaseRuntime)
@@ -199,4 +245,4 @@ expect(lease != nil, "First app instance must acquire its lease")
 expect(ApplicationLease(runtime: leaseRuntime) == nil, "A duplicate app instance must not start another authorization loop")
 lease = nil
 expect(ApplicationLease(runtime: leaseRuntime) != nil, "Exiting the app must release its lease")
-print("Native authentication: single main-app read, worker private pipes, retry suspension, revocation race, legacy migration, and duplicate-instance lease passed")
+print("Native authentication: single main-app read, worker private pipes, retry suspension, revocation race, legacy migration, optimistic controls, and duplicate-instance lease passed")

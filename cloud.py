@@ -98,40 +98,52 @@ class XiaomiCloud:
         return self._request(path, payload)
 
     def set_property(self, device, spec, field, value):
+        return self.set_properties(device, spec, {field: value})
+
+    def set_properties(self, device, spec, values):
+        """Validate every change first, then send them in one request and read them back together."""
         allowed = {"on", "mode", "target-temperature", "fan-level"}
-        if field not in allowed:
-            raise CloudError("不支持这个控制功能")
-        properties = [(s, p) for s in spec.get("services", [])
-                      if any(part in s.get("type", "") for part in (":air-conditioner:", ":fan-control:"))
-                      for p in s.get("properties", []) if f":{field}:" in p.get("type", "")]
-        if len(properties) != 1:
-            raise CloudError("设备未提供唯一的控制属性")
-        service, prop = properties[0]
-        if "write" not in prop.get("access", []):
-            raise CloudError("该设备属性不可写")
-        if prop.get("format") == "bool":
-            if type(value) is not bool:
-                raise CloudError("开关值必须是 true 或 false")
-        elif type(value) not in (int, float):
-            raise CloudError("控制值必须是数字")
-        if options := prop.get("value-list"):
-            if value not in [o["value"] for o in options]:
-                raise CloudError("控制值不在设备支持的选项中")
-        if limits := prop.get("value-range"):
-            low, high, step = limits
-            if not low <= value <= high or abs((value - low) / step - round((value - low) / step)) > 1e-6:
-                raise CloudError("温度超出设备范围或不符合调节步长")
-        change = {"did": device["did"], "siid": service["iid"], "piid": prop["iid"], "value": value}
-        result = self._request("miotspec/prop/set", {"params": [change]})
-        if not isinstance(result, list) or len(result) != 1 or result[0].get("code") != 0:
-            code = result[0].get("code", "unknown") if isinstance(result, list) and result else "unknown"
+        changes = []
+        for field, value in values.items():
+            if field not in allowed:
+                raise CloudError("不支持这个控制功能")
+            properties = [(s, p) for s in spec.get("services", [])
+                          if any(part in s.get("type", "") for part in (":air-conditioner:", ":fan-control:"))
+                          for p in s.get("properties", []) if f":{field}:" in p.get("type", "")]
+            if len(properties) != 1:
+                raise CloudError("设备未提供唯一的控制属性")
+            service, prop = properties[0]
+            if "write" not in prop.get("access", []):
+                raise CloudError("该设备属性不可写")
+            if prop.get("format") == "bool":
+                if type(value) is not bool:
+                    raise CloudError("开关值必须是 true 或 false")
+            elif type(value) not in (int, float):
+                raise CloudError("控制值必须是数字")
+            if options := prop.get("value-list"):
+                if value not in [o["value"] for o in options]:
+                    raise CloudError("控制值不在设备支持的选项中")
+            if limits := prop.get("value-range"):
+                low, high, step = limits
+                if not low <= value <= high or abs((value - low) / step - round((value - low) / step)) > 1e-6:
+                    raise CloudError("温度超出设备范围或不符合调节步长")
+            changes.append({"did": device["did"], "siid": service["iid"], "piid": prop["iid"], "value": value})
+        if not changes:
+            raise CloudError("没有需要发送的控制指令")
+        result = self._request("miotspec/prop/set", {"params": changes})
+        if not isinstance(result, list) or len(result) != len(changes) or any(r.get("code") != 0 for r in result):
+            failed = [r for r in result if r.get("code") != 0] if isinstance(result, list) else []
+            code = failed[0].get("code", "unknown") if failed else "unknown"
             raise CloudError(f"空调控制未成功（code={code}）")
-        # A successful acknowledgement is not sufficient: read back the changed value.
-        for _ in range(4):
-            time.sleep(1)
-            state = self.api("miotspec/prop/get", {"params": [{k: v for k, v in change.items() if k != "value"}]}) or []
-            if any(p.get("code") == 0 and p.get("value") == value and
-                   p.get("siid") == change["siid"] and p.get("piid") == change["piid"] for p in state):
+        # A successful acknowledgement is not sufficient: read back every changed value.
+        # Poll quickly so a confirmed change is reported as soon as the cloud reflects it.
+        query = [{k: v for k, v in change.items() if k != "value"} for change in changes]
+        for _ in range(10):
+            time.sleep(0.4)
+            state = self.api("miotspec/prop/get", {"params": query}) or []
+            if all(any(p.get("code") == 0 and p.get("value") == change["value"] and
+                       p.get("siid") == change["siid"] and p.get("piid") == change["piid"] for p in state)
+                   for change in changes):
                 return result
         raise CloudError("指令已发送，但暂未确认设备状态；请刷新查看")
 
