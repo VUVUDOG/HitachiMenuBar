@@ -218,6 +218,8 @@ func settle(_ model: AppModel) {
     expect(!model.active && model.inFlight == nil && model.pending.isEmpty, "Queued controls must drain")
 }
 expect(control.selected?.target == 26, "Control fixture must load the reported temperature")
+expect(control.selected?.step == 0.5 && AppModel.degrees(25.5) == "25.5" && AppModel.degrees(26) == "26",
+    "Target temperature must offer half degrees until the unit rejects them")
 for value in [27.0, 28.0, 29.0] { control.set("target-temperature", value: value, delay: 0.6) }
 expect(control.selected?.target == 29 && !control.active, "Taps must show immediately and wait for the debounce")
 settle(control)
@@ -237,6 +239,11 @@ control.set("target-temperature", value: 31.0)
 expect(control.selected?.target == 31, "Failure case must first show the optimistic value")
 settle(control)
 expect(control.selected?.target == 26 && control.message.contains("未调整成功"), "A failed control must revert to the reported state")
+
+try saveFixture("report.json", ["devices": [["device": ["did": "test-room", "name": "测试空调"], "spec": controlSpec,
+    "state": controlState, "half_step": false]]], runtime: controlRuntime)
+control.poll()
+expect(control.selected?.step == 1, "A unit that rejected half degrees must fall back to its declared step")
 
 let leaseRuntime = testRuntime.appendingPathComponent("lease-test")
 try FileManager.default.createDirectory(at: leaseRuntime, withIntermediateDirectories: true)

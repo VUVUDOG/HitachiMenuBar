@@ -127,6 +127,10 @@ class XiaomiCloud:
                     raise CloudError("控制值不在设备支持的选项中")
             if limits := prop.get("value-range"):
                 low, high, step = limits
+                if field == "target-temperature":
+                    # Physical panels often allow 0.5° although the spec declares 1°.
+                    # Whether the unit really accepts it is confirmed by the readback below.
+                    step = min(step, 0.5)
                 if not low <= value <= high or abs((value - low) / step - round((value - low) / step)) > 1e-6:
                     raise CloudError("温度超出设备范围或不符合调节步长")
             changes.append({"did": device["did"], "siid": service["iid"], "piid": prop["iid"], "value": value})
