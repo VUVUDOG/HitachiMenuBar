@@ -12,8 +12,8 @@ v0.3.4 的真实控制视图，在 macOS 26 上使用原生 Liquid Glass 渲染�
 
 | Mac 类型 | 下载 |
 | --- | --- |
-| Apple Silicon（M 系列） | [arm64.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.1/HitachiMenuBar-0.4.1-arm64.zip) |
-| Intel 处理器 | [intel.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.1/HitachiMenuBar-0.4.1-intel.zip) |
+| Apple Silicon（M 系列） | [arm64.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.2/HitachiMenuBar-0.4.2-arm64.zip) |
+| Intel 处理器 | [intel.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.2/HitachiMenuBar-0.4.2-intel.zip) |
 
 [全部版本与图文指南](https://github.com/VUVUDOG/HitachiMenuBar/releases) · [安装使用说明](docs/usage.md)
 
@@ -35,7 +35,7 @@ v0.3.4 图文指南（界面与安装步骤仍适用）：[PDF](https://github.c
 | macOS 26 或更新 | 原生 Liquid Glass，带系统玻璃底色。 |
 | macOS 13–15 | 自动使用系统菜单毛玻璃，保留旧系统兼容性。 |
 
-两种背景均保留圆角，窗口随内容贴合，不增加上下占位。自 v0.3.5 起关闭系统窗口阴影，以去除 macOS 26 上圆角外侧的黑色边框。外观由系统版本决定，Apple Silicon 和 Intel 都采用相同判断；底色随壁纸和后方窗口变化。启用系统「降低透明度」等辅助功能时，系统材质的透明程度也会变化。
+两种背景均保留圆角，窗口随内容贴合，不增加上下占位；更新提示、二维码或房间数变化时窗口高度同步调整（v0.4.2 修复了检查更新提示导致上下文字出界的问题）。自 v0.3.5 起关闭系统窗口阴影，以去除 macOS 26 上圆角外侧的黑色边框。外观由系统版本决定，Apple Silicon 和 Intel 都采用相同判断；底色随壁纸和后方窗口变化。启用系统「降低透明度」等辅助功能时，系统材质的透明程度也会变化。
 
 <details>
 <summary>查看兼容毛玻璃分支</summary>

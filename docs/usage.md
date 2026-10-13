@@ -1,6 +1,6 @@
 # 安装与使用
 
-[下载最新版](https://github.com/VUVUDOG/HitachiMenuBar/releases/latest)。本说明对应 **v0.4.1**，截图沿用 v0.3.4 界面（不含新增的室温与更新提示）。
+[下载最新版](https://github.com/VUVUDOG/HitachiMenuBar/releases/latest)。本说明对应 **v0.4.2**，截图沿用 v0.3.4 界面（不含新增的室温与更新提示）。
 
 [PDF 图文指南](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.pdf) · [离线网页版](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.html) · [长图](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.png) · [含两种安装包的分享包](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-sharing-kit.zip)
 
