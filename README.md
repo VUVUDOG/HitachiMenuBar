@@ -4,7 +4,7 @@
 
 <img src="docs/images/control-glass.png" alt="v0.3.4 原生 Liquid Glass 控制面板，演示房间" width="360">
 
-v0.3.4 的真实控制视图，在 macOS 26 上使用原生 Liquid Glass 渲染。截图使用演示房间、模拟状态和示例桌面，不包含真实账号或家庭设备数据。
+v0.3.4 的真实控制视图，在 macOS 26 上使用原生 Liquid Glass 渲染。截图使用演示房间、模拟状态和示例桌面，不包含真实账号或家庭设备数据；v0.4.0 新增的室温、湿度和更新提示未在此图中展示。
 
 ## 下载与安装
 
@@ -12,12 +12,12 @@ v0.3.4 的真实控制视图，在 macOS 26 上使用原生 Liquid Glass 渲染�
 
 | Mac 类型 | 下载 |
 | --- | --- |
-| Apple Silicon（M 系列） | [arm64.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-arm64.zip) |
-| Intel 处理器 | [intel.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-intel.zip) |
+| Apple Silicon（M 系列） | [arm64.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.0/HitachiMenuBar-0.4.0-arm64.zip) |
+| Intel 处理器 | [intel.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.0/HitachiMenuBar-0.4.0-intel.zip) |
 
 [全部版本与图文指南](https://github.com/VUVUDOG/HitachiMenuBar/releases) · [安装使用说明](docs/usage.md)
 
-v0.3.4 图文指南：[PDF](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.pdf) · [离线网页版](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.html) · [长图](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.png) · [完整分享包](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-sharing-kit.zip)
+v0.3.4 图文指南（界面与安装步骤仍适用）：[PDF](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.pdf) · [离线网页版](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.html) · [长图](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.png) · [完整分享包](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-sharing-kit.zip)
 
 1. 手机米家 → 连接三方平台 → 日立中央空调，输入日立智家账号密码完成关联，确认米家能控制设备。
 2. 下载匹配芯片的 ZIP，解压后将 `HitachiMenuBar.app` 放入「应用程序」并打开。
@@ -26,6 +26,8 @@ v0.3.4 图文指南：[PDF](https://github.com/VUVUDOG/HitachiMenuBar/releases/d
 
 安装包包含运行环境，无需安装 Python、uv 或开发工具。每台 Mac 各自登录。
 
+从 **v0.4.0** 起支持应用内更新：启动时及每 24 小时检查一次 GitHub 最新版本，面板出现「发现新版本」后点击「更新」即可自动下载、校验、替换并重新打开。v0.3.x 用户需手动下载一次 v0.4.0。
+
 ## 系统玻璃外观
 
 | 系统 | 背景效果 |
@@ -33,7 +35,7 @@ v0.3.4 图文指南：[PDF](https://github.com/VUVUDOG/HitachiMenuBar/releases/d
 | macOS 26 或更新 | 原生 Liquid Glass，带系统玻璃底色。 |
 | macOS 13–15 | 自动使用系统菜单毛玻璃，保留旧系统兼容性。 |
 
-两种背景均保留圆角和窗口阴影，窗口随内容贴合，不增加上下占位。外观由系统版本决定，Apple Silicon 和 Intel 都采用相同判断；底色随壁纸和后方窗口变化。启用系统「降低透明度」等辅助功能时，系统材质的透明程度也会变化。
+两种背景均保留圆角，窗口随内容贴合，不增加上下占位。自 v0.3.5 起关闭系统窗口阴影，以去除 macOS 26 上圆角外侧的黑色边框。外观由系统版本决定，Apple Silicon 和 Intel 都采用相同判断；底色随壁纸和后方窗口变化。启用系统「降低透明度」等辅助功能时，系统材质的透明程度也会变化。
 
 <details>
 <summary>查看兼容毛玻璃分支</summary>
@@ -46,15 +48,20 @@ v0.3.4 图文指南：[PDF](https://github.com/VUVUDOG/HitachiMenuBar/releases/d
 
 ## 功能
 
-- 系统玻璃背景、圆角与窗口阴影；macOS 26+ 使用原生 Liquid Glass，macOS 13–15 自动回退到菜单毛玻璃。
+- 系统玻璃背景与圆角；macOS 26+ 使用原生 Liquid Glass，macOS 13–15 自动回退到菜单毛玻璃。
 - 多房间切换、开关、设定温度、运行模式和风量。
+- 点击即生效：界面立即显示新状态，后台同步到空调；失败时自动恢复原状态并提示。
+- 连续操作不丢失：连按温度只发送最终值，发送中的新操作排队，同一房间的多项改动合并为一次发送。
+- 室温与湿度：读取同一米家房间内的米家温湿度计，显示在房间卡片和温度卡片中；无温度计的房间不显示。
+- 开机自动启动：齿轮菜单中开关，使用系统「登录项」。
+- 应用内更新：检查 GitHub 发布版本，下载后校验 SHA-256、应用标识和签名，通过后替换并重新打开。
 - 控制选项按设备功能定义生成，读取不到或不可写的功能不开放操作。
 - 展开面板立即发起刷新，随后每 30 秒刷新；收起后暂停。
 - 控制后回读确认，底部显示更新时间与连接提示。
-- 齿轮菜单提供同步房间、重新登录、退出登录、复制诊断和退出应用。
+- 齿轮菜单提供同步房间、重新登录、退出登录、开机自动启动、检查更新、复制诊断和退出应用。
 - 登录会话保存于本机系统钥匙串；成功读取后，本次运行的后续请求复用内存会话。
 
-已验证设备支持 16–32°C、自动 / 制冷 / 除湿 / 送风 / 制热，以及自动 / 低 / 中 / 高风。具体选项以设备能力为准。已验证设备不提供实测室温，大数字为**设定温度**。
+已验证设备支持 16–32°C（米家接口仅支持整数度，0.5°C 调节只能在实体面板上操作）、自动 / 制冷 / 除湿 / 送风 / 制热，以及自动 / 低 / 中 / 高风。具体选项以设备能力为准。大数字为**设定温度**；空调本身不提供室温，室温来自同房间的米家温湿度计，新增或更换温度计后在齿轮菜单「同步房间」即可识别。
 
 ## 当前说明
 
