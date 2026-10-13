@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 import Darwin
 import Security
+import CryptoKit
+import ServiceManagement
 
 // Hold this lease for the application's lifetime. Opening a second copy must
 // not create another independent Keychain authorization or refresh loop.
@@ -514,6 +516,200 @@ final class AppModel: ObservableObject {
     }
 }
 
+// Launch at login and in-app updates from the project's GitHub releases.
+final class Updater: ObservableObject {
+    static let shared = Updater()
+    static let repository = "VUVUDOG/HitachiMenuBar"
+    #if arch(arm64)
+    static let assetSuffix = "arm64"
+    #else
+    static let assetSuffix = "intel"
+    #endif
+
+    @Published var latest: String?
+    @Published var state = "idle"   // idle, checking, downloading, installing
+    @Published var note: String?
+    @Published var launchAtLogin = SMAppService.mainApp.status == .enabled
+    var asset: URL?
+    var checksums: URL?
+    var timer: Timer?
+    var noteWork: DispatchWorkItem?
+
+    static func isNewer(_ candidate: String, than current: String) -> Bool {
+        let parse = { (text: String) in text.split(separator: ".").map { Int($0) ?? 0 } }
+        let a = parse(candidate), b = parse(current)
+        for index in 0..<max(a.count, b.count) {
+            let x = index < a.count ? a[index] : 0, y = index < b.count ? b[index] : 0
+            if x != y { return x > y }
+        }
+        return false
+    }
+
+    // Test hook: HITACHI_UPDATE_FEED points the check at a local release feed, and
+    // HITACHI_UPDATE_INSTALL=1 installs whatever it finds. Unset for normal users.
+    static let feed = ProcessInfo.processInfo.environment["HITACHI_UPDATE_FEED"].flatMap(URL.init)
+        ?? URL(string: "https://api.github.com/repos/\(repository)/releases/latest")!
+
+    func start() {
+        check(manual: false)
+        timer = Timer.scheduledTimer(withTimeInterval: 24 * 3600, repeats: true) { [weak self] _ in self?.check(manual: false) }
+    }
+
+    func show(_ text: String?, for seconds: TimeInterval? = nil) {
+        noteWork?.cancel()
+        note = text
+        guard let seconds = seconds else { return }
+        let work = DispatchWorkItem { [weak self] in self?.note = nil }
+        noteWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: work)
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+        } catch {
+            show("开机自动启动设置未成功，请在系统设置的“登录项”中调整", for: 6)
+        }
+        launchAtLogin = SMAppService.mainApp.status == .enabled
+        if enabled && SMAppService.mainApp.status == .requiresApproval {
+            show("请在系统设置的“登录项”中允许日立空调", for: 6)
+            SMAppService.openSystemSettingsLoginItems()
+        }
+    }
+
+    func check(manual: Bool) {
+        guard state == "idle" else { return }
+        state = "checking"
+        if manual { show("正在检查更新…") }
+        var request = URLRequest(url: Self.feed)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 20
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
+            let release = data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.state = "idle"
+                guard (response as? HTTPURLResponse)?.statusCode == 200, let release = release,
+                      let tag = release["tag_name"] as? String else {
+                    if manual { self.show("检查更新失败，请稍后再试", for: 5) }
+                    return
+                }
+                let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
+                let assets = release["assets"] as? [[String: Any]] ?? []
+                func url(_ name: String) -> URL? {
+                    (assets.first { $0["name"] as? String == name }?["browser_download_url"] as? String).flatMap(URL.init)
+                }
+                let asset = url("HitachiMenuBar-\(version)-\(Self.assetSuffix).zip")
+                if Self.isNewer(version, than: AppModel.version), let asset = asset {
+                    self.latest = version; self.asset = asset; self.checksums = url("SHA256SUMS.txt")
+                    if manual { self.show(nil) }
+                    if ProcessInfo.processInfo.environment["HITACHI_UPDATE_INSTALL"] == "1" { self.install() }
+                } else {
+                    self.latest = nil
+                    if manual { self.show("已是最新版本 \(AppModel.version)", for: 4) }
+                }
+            }
+        }.resume()
+    }
+
+    func install() {
+        guard state == "idle", let version = latest, let asset = asset, let checksums = checksums else {
+            if latest != nil { show("新版本缺少校验文件，已取消更新", for: 6) }
+            return
+        }
+        state = "downloading"
+        show("正在下载 \(version)…")
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let result = Result { try Self.prepare(asset: asset, checksums: checksums, version: version) }
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                switch result {
+                case .success(let app):
+                    self.state = "installing"
+                    self.show("正在安装并重新打开…")
+                    do { try Self.replaceAndRelaunch(with: app) } catch {
+                        self.state = "idle"
+                        self.show("安装未完成：\(error.localizedDescription)", for: 8)
+                    }
+                case .failure(let error):
+                    self.state = "idle"
+                    self.show("更新未完成：\(error.localizedDescription)", for: 8)
+                }
+            }
+        }
+    }
+
+    struct UpdateError: LocalizedError {
+        let errorDescription: String?
+        init(_ text: String) { errorDescription = text }
+    }
+
+    static func fetch(_ url: URL) throws -> Data {
+        var result: Result<Data, Error> = .failure(UpdateError("下载超时"))
+        let done = DispatchSemaphore(value: 0)
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 120
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let data = data, (response as? HTTPURLResponse)?.statusCode == 200 { result = .success(data) }
+            else { result = .failure(error ?? UpdateError("下载失败")) }
+            done.signal()
+        }.resume()
+        _ = done.wait(timeout: .now() + 180)
+        return try result.get()
+    }
+
+    @discardableResult
+    static func run(_ tool: String, _ arguments: [String]) throws -> Int32 {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: tool)
+        process.arguments = arguments
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        process.waitUntilExit()
+        return process.terminationStatus
+    }
+
+    // Download, verify the published SHA-256, unpack and check the bundle before touching the installed app.
+    static func prepare(asset: URL, checksums: URL, version: String) throws -> URL {
+        let archive = try fetch(asset)
+        let sums = String(decoding: try fetch(checksums), as: UTF8.self)
+        let digest = SHA256.hash(data: archive).map { String(format: "%02x", $0) }.joined()
+        let expected = sums.split(separator: "\n").compactMap { line -> String? in
+            let parts = line.split(separator: " ", omittingEmptySubsequences: true)
+            guard parts.count >= 2, parts.last.map({ $0.trimmingCharacters(in: CharacterSet(charactersIn: "*")) }) == asset.lastPathComponent else { return nil }
+            return String(parts[0]).lowercased()
+        }.first
+        guard expected == digest else { throw UpdateError("安装包校验未通过") }
+        let installed = Bundle.main.bundleURL
+        let staging = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask,
+                                                  appropriateFor: installed, create: true)
+        let zip = staging.appendingPathComponent(asset.lastPathComponent)
+        try archive.write(to: zip)
+        guard try run("/usr/bin/ditto", ["-x", "-k", zip.path, staging.path]) == 0 else { throw UpdateError("无法解压安装包") }
+        let app = staging.appendingPathComponent("HitachiMenuBar.app")
+        guard let info = NSDictionary(contentsOf: app.appendingPathComponent("Contents/Info.plist")),
+              info["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier,
+              info["CFBundleShortVersionString"] as? String == version else { throw UpdateError("安装包内容与版本不符") }
+        guard try run("/usr/bin/codesign", ["--verify", "--deep", app.path]) == 0 else { throw UpdateError("安装包签名校验未通过") }
+        _ = try? run("/usr/bin/xattr", ["-dr", "com.apple.quarantine", app.path])
+        return app
+    }
+
+    // Swap the bundle in place, then reopen it once this process has exited (the
+    // single-instance lease would otherwise make the new copy quit immediately).
+    static func replaceAndRelaunch(with app: URL) throws {
+        let installed = Bundle.main.bundleURL
+        _ = try FileManager.default.replaceItemAt(installed, withItemAt: app)
+        let relaunch = Process()
+        relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
+        relaunch.arguments = ["-c", "while kill -0 \"$1\" 2>/dev/null; do sleep 0.2; done; /usr/bin/open \"$2\" --args --show",
+                              "relaunch", String(ProcessInfo.processInfo.processIdentifier), installed.path]
+        try relaunch.run()
+        NSApp.terminate(nil)
+    }
+}
+
 private struct PanelHeightKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
@@ -539,6 +735,7 @@ struct QuietIconStyle: ButtonStyle {
 struct ControlView: View {
     @ObservedObject var model: AppModel
     var onHeightChange: (CGFloat) -> Void
+    @ObservedObject var updater = Updater.shared
     @State private var draft = 26.0
     static let accent = Color(red: 0.45, green: 0.84, blue: 0.77)
 
@@ -568,6 +765,10 @@ struct ControlView: View {
                 Divider()
                 Button("退出登录") { model.logout() }.disabled(model.controlling || !model.canLogout)
                 Divider()
+                Toggle("开机自动启动", isOn: Binding(get: { updater.launchAtLogin }, set: { updater.setLaunchAtLogin($0) }))
+                Button(updater.latest.map { "更新到 \($0)" } ?? "检查更新") {
+                    if updater.latest != nil { updater.install() } else { updater.check(manual: true) }
+                }.disabled(updater.state != "idle")
                 Text("版本 \(AppModel.version)")
                 Button("复制诊断信息") {
                     NSPasteboard.general.clearContents()
@@ -716,6 +917,22 @@ struct ControlView: View {
         }.frame(maxWidth: .infinity).padding(.vertical, 22).modifier(Surface(radius: 18))
     }
 
+    var updateBanner: some View {
+        HStack(spacing: 9) {
+            if updater.state != "idle" { ProgressView().controlSize(.mini).frame(width: 12) }
+            else { Image(systemName: "arrow.down.circle").font(.system(size: 13)).foregroundStyle(Self.accent) }
+            Text(updater.note ?? "发现新版本 \(updater.latest ?? "")").font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            if updater.latest != nil && updater.state == "idle" {
+                Button { updater.install() } label: {
+                    Text("更新").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color(red: 0.07, green: 0.16, blue: 0.14))
+                        .padding(.horizontal, 12).padding(.vertical, 5).background(Self.accent, in: Capsule())
+                }.buttonStyle(.plain)
+            }
+        }.padding(.horizontal, 12).padding(.vertical, 9).modifier(Surface(radius: 12))
+    }
+
     var footer: some View {
         HStack(spacing: 9) {
             if model.busy || !model.pending.isEmpty { ProgressView().controlSize(.mini).frame(width: 12) }
@@ -742,6 +959,7 @@ struct ControlView: View {
                 options(room)
                 if let message = room.message { Text(message).font(.caption).foregroundStyle(.secondary) }
             } else { loginContent }
+            if updater.latest != nil || updater.note != nil { updateBanner }
             Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1)
             footer
         }.padding(.horizontal, 16).padding(.vertical, 10)
@@ -891,6 +1109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        if !CommandLine.arguments.contains(where: { $0.hasPrefix("--preview=") }) { Updater.shared.start() }
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             guard let self = self, self.panel.isVisible, !self.model.busy, !self.model.rooms.isEmpty else { return }
             self.model.refresh(automatic: true)

@@ -238,6 +238,9 @@ expect(control.selected?.target == 31, "Failure case must first show the optimis
 settle(control)
 expect(control.selected?.target == 26 && control.message.contains("未调整成功"), "A failed control must revert to the reported state")
 
+expect(Updater.isNewer("0.3.10", than: "0.3.9") && Updater.isNewer("0.4", than: "0.3.9") &&
+    !Updater.isNewer("0.3.9", than: "0.3.9") && !Updater.isNewer("0.3.8", than: "0.3.9"), "Update check must compare versions numerically")
+
 let leaseRuntime = testRuntime.appendingPathComponent("lease-test")
 try FileManager.default.createDirectory(at: leaseRuntime, withIntermediateDirectories: true)
 var lease = ApplicationLease(runtime: leaseRuntime)
