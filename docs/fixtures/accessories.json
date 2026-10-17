@@ -1,0 +1,3011 @@
+{
+ "accessories": [
+  {
+   "device": {
+    "did": "device-0",
+    "name": "air-purifier-0",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "air-purifier",
+   "group": false,
+   "props": [
+    {
+     "address": "air-purifier.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "air-purifier.mode",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "options": [
+      {
+       "value": 0,
+       "description": "Auto"
+      },
+      {
+       "value": 1,
+       "description": "Sleep"
+      },
+      {
+       "value": 2,
+       "description": "Strong"
+      },
+      {
+       "value": 3,
+       "description": "None"
+      }
+     ]
+    },
+    {
+     "address": "air-purifier.fan-level",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "options": [
+      {
+       "value": 1,
+       "description": "Low"
+      },
+      {
+       "value": 2,
+       "description": "Medium"
+      },
+      {
+       "value": 3,
+       "description": "High"
+      }
+     ]
+    },
+    {
+     "address": "environment.pm2.5-density",
+     "siid": 3,
+     "piid": 1,
+     "format": "float",
+     "readable": true,
+     "writable": false,
+     "range": [
+      0,
+      600,
+      1
+     ]
+    }
+   ],
+   "state": {
+    "air-purifier.on": true,
+    "air-purifier.mode": 1,
+    "environment.pm2.5-density": 43
+   }
+  },
+  {
+   "device": {
+    "did": "device-1",
+    "name": "light-1",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 2700
+   }
+  },
+  {
+   "device": {
+    "did": "device-2",
+    "name": "light-2",
+    "isOnline": false
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {}
+  },
+  {
+   "device": {
+    "did": "device-3",
+    "name": "light-3",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100
+   }
+  },
+  {
+   "device": {
+    "did": "device-4",
+    "name": "light-4",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      3000,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4750
+   }
+  },
+  {
+   "device": {
+    "did": "device-5",
+    "name": "curtain-5",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "curtain",
+   "group": false,
+   "props": [
+    {
+     "address": "curtain.motor-control",
+     "siid": 2,
+     "piid": 1,
+     "format": "uint8",
+     "readable": false,
+     "writable": true,
+     "options": [
+      {
+       "value": 1,
+       "description": "Open"
+      },
+      {
+       "value": 2,
+       "description": "Close"
+      },
+      {
+       "value": 0,
+       "description": "Pause"
+      },
+      {
+       "value": 3,
+       "description": "toggle"
+      },
+      {
+       "value": 4,
+       "description": "Jz"
+      }
+     ]
+    },
+    {
+     "address": "curtain.target-position",
+     "siid": 2,
+     "piid": 4,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      0,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "curtain.current-position",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint8",
+     "readable": true,
+     "writable": false,
+     "range": [
+      0,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    }
+   ],
+   "state": {
+    "curtain.target-position": 0,
+    "curtain.current-position": 0
+   }
+  },
+  {
+   "device": {
+    "did": "device-6",
+    "name": "light-6",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-7",
+    "name": "light-7",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 1,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-8",
+    "name": "light-8",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-9",
+    "name": "light-9",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-10",
+    "name": "light-10",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-11",
+    "name": "light-11",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 50,
+    "light.color-temperature": 5000
+   }
+  },
+  {
+   "device": {
+    "did": "device-12",
+    "name": "curtain-12",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "curtain",
+   "group": false,
+   "props": [
+    {
+     "address": "curtain.motor-control",
+     "siid": 2,
+     "piid": 1,
+     "format": "uint8",
+     "readable": false,
+     "writable": true,
+     "options": [
+      {
+       "value": 1,
+       "description": "Open"
+      },
+      {
+       "value": 2,
+       "description": "Close"
+      },
+      {
+       "value": 0,
+       "description": "Pause"
+      },
+      {
+       "value": 3,
+       "description": "toggle"
+      },
+      {
+       "value": 4,
+       "description": "Jz"
+      }
+     ]
+    },
+    {
+     "address": "curtain.target-position",
+     "siid": 2,
+     "piid": 4,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      0,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "curtain.current-position",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint8",
+     "readable": true,
+     "writable": false,
+     "range": [
+      0,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    }
+   ],
+   "state": {
+    "curtain.target-position": 0,
+    "curtain.current-position": 0
+   }
+  },
+  {
+   "device": {
+    "did": "device-13",
+    "name": "light-13",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-14",
+    "name": "light-14",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 6500
+   }
+  },
+  {
+   "device": {
+    "did": "device-15",
+    "name": "light-15",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 3156
+   }
+  },
+  {
+   "device": {
+    "did": "device-16",
+    "name": "light-16",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 1,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-17",
+    "name": "light-17",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 4,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      3000,
+      5700,
+      1
+     ],
+     "unit": "kelvin"
+    },
+    {
+     "address": "fan.on",
+     "siid": 7,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "fan.fan-level",
+     "siid": 7,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "options": [
+      {
+       "value": 0,
+       "description": "Quiet"
+      },
+      {
+       "value": 1,
+       "description": "Low"
+      },
+      {
+       "value": 2,
+       "description": "Medium"
+      },
+      {
+       "value": 3,
+       "description": "High"
+      }
+     ]
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4350,
+    "fan.on": false,
+    "fan.fan-level": 0
+   }
+  },
+  {
+   "device": {
+    "did": "device-18",
+    "name": "bath-heater-18",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "bath-heater",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 25,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2800,
+      6000,
+      1
+     ],
+     "unit": "kelvin"
+    },
+    {
+     "address": "ptc-bath-heater.mode",
+     "siid": 4,
+     "piid": 17,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "options": [
+      {
+       "value": 0,
+       "description": "Idle"
+      },
+      {
+       "value": 1,
+       "description": "Fan"
+      },
+      {
+       "value": 2,
+       "description": "Heat"
+      },
+      {
+       "value": 3,
+       "description": "Dry"
+      },
+      {
+       "value": 4,
+       "description": "Defog"
+      },
+      {
+       "value": 5,
+       "description": "Disinfect"
+      }
+     ]
+    },
+    {
+     "address": "ptc-bath-heater.target-temperature",
+     "siid": 4,
+     "piid": 4,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      25,
+      35,
+      1
+     ],
+     "unit": "celsius"
+    },
+    {
+     "address": "environment.temperature",
+     "siid": 11,
+     "piid": 7,
+     "format": "int16",
+     "readable": true,
+     "writable": false,
+     "range": [
+      -30,
+      100,
+      1
+     ],
+     "unit": "celsius"
+    },
+    {
+     "address": "environment.relative-humidity",
+     "siid": 11,
+     "piid": 9,
+     "format": "uint8",
+     "readable": true,
+     "writable": false,
+     "range": [
+      0,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    }
+   ],
+   "state": {
+    "light.on": true,
+    "light.brightness": 20,
+    "light.color-temperature": 6000,
+    "ptc-bath-heater.mode": 0,
+    "ptc-bath-heater.target-temperature": 28,
+    "environment.temperature": 27,
+    "environment.relative-humidity": 70
+   }
+  },
+  {
+   "device": {
+    "did": "device-19",
+    "name": "light-19",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 3887
+   }
+  },
+  {
+   "device": {
+    "did": "device-20",
+    "name": "light-20",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 26,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-21",
+    "name": "light-21",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 20,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-22",
+    "name": "light-22",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-23",
+    "name": "light-23",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-24",
+    "name": "curtain-24",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "curtain",
+   "group": false,
+   "props": [
+    {
+     "address": "curtain.motor-control",
+     "siid": 2,
+     "piid": 1,
+     "format": "uint8",
+     "readable": false,
+     "writable": true,
+     "options": [
+      {
+       "value": 1,
+       "description": "Open"
+      },
+      {
+       "value": 2,
+       "description": "Close"
+      },
+      {
+       "value": 0,
+       "description": "Pause"
+      },
+      {
+       "value": 3,
+       "description": "toggle"
+      },
+      {
+       "value": 4,
+       "description": "Jz"
+      }
+     ]
+    },
+    {
+     "address": "curtain.target-position",
+     "siid": 2,
+     "piid": 4,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      0,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "curtain.current-position",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint8",
+     "readable": true,
+     "writable": false,
+     "range": [
+      0,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    }
+   ],
+   "state": {
+    "curtain.target-position": 0,
+    "curtain.current-position": 0
+   }
+  },
+  {
+   "device": {
+    "did": "device-25",
+    "name": "light-25",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 50,
+    "light.color-temperature": 5000
+   }
+  },
+  {
+   "device": {
+    "did": "device-26",
+    "name": "light-26",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": true,
+    "light.brightness": 30,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-27",
+    "name": "light-27",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 6500
+   }
+  },
+  {
+   "device": {
+    "did": "device-28",
+    "name": "light-28",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": true,
+    "light.brightness": 30,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-29",
+    "name": "light-29",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-30",
+    "name": "light-30",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 5,
+    "light.color-temperature": 2700
+   }
+  },
+  {
+   "device": {
+    "did": "device-31",
+    "name": "light-31",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-32",
+    "name": "light-32",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-33",
+    "name": "light-33",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": true,
+    "light.brightness": 5,
+    "light.color-temperature": 2700
+   }
+  },
+  {
+   "device": {
+    "did": "device-34",
+    "name": "light-34",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-35",
+    "name": "light-35",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 5,
+    "light.color-temperature": 2700
+   }
+  },
+  {
+   "device": {
+    "did": "device-36",
+    "name": "light-36",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-37",
+    "name": "light-37",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-38",
+    "name": "light-38",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-39",
+    "name": "light-39",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-40",
+    "name": "light-40",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint16",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      6500,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-41",
+    "name": "outlet-41",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "outlet",
+   "group": false,
+   "props": [
+    {
+     "address": "switch.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "power-consumption.electric-power",
+     "siid": 11,
+     "piid": 2,
+     "format": "float",
+     "readable": true,
+     "writable": false,
+     "range": [
+      0,
+      10000,
+      1
+     ],
+     "unit": "watt"
+    }
+   ],
+   "state": {
+    "switch.on": true,
+    "power-consumption.electric-power": 58
+   }
+  },
+  {
+   "device": {
+    "did": "device-42",
+    "name": "light-42",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      5700,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4531
+   }
+  },
+  {
+   "device": {
+    "did": "device-43",
+    "name": "light-43",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      5700,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 5700
+   }
+  },
+  {
+   "device": {
+    "did": "device-44",
+    "name": "light-44",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": false,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      2700,
+      5700,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": true,
+    "light.brightness": 100,
+    "light.color-temperature": 5700
+   }
+  },
+  {
+   "device": {
+    "did": "device-45",
+    "name": "fan-45",
+    "isOnline": false
+   },
+   "room": "房间",
+   "kind": "fan",
+   "group": false,
+   "props": [
+    {
+     "address": "fan.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "fan.mode",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "options": [
+      {
+       "value": 0,
+       "description": "Straight Wind"
+      },
+      {
+       "value": 1,
+       "description": "Natural Wind"
+      }
+     ]
+    },
+    {
+     "address": "fan.fan-level",
+     "siid": 2,
+     "piid": 4,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "options": [
+      {
+       "value": 0,
+       "description": "Level1"
+      },
+      {
+       "value": 1,
+       "description": "Level2"
+      },
+      {
+       "value": 2,
+       "description": "Level3"
+      },
+      {
+       "value": 3,
+       "description": "Level4"
+      }
+     ]
+    },
+    {
+     "address": "fan.horizontal-swing",
+     "siid": 2,
+     "piid": 6,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    }
+   ],
+   "state": {}
+  },
+  {
+   "device": {
+    "did": "device-46",
+    "name": "light-46",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": true,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1700,
+      7000,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-47",
+    "name": "light-47",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": true,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1700,
+      7000,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-48",
+    "name": "light-48",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": true,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1700,
+      7000,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": true,
+    "light.brightness": 30,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-49",
+    "name": "light-49",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": true,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1700,
+      7000,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 50,
+    "light.color-temperature": 5000
+   }
+  },
+  {
+   "device": {
+    "did": "device-50",
+    "name": "light-50",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": true,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1700,
+      7000,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 35,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-51",
+    "name": "light-51",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": true,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1700,
+      7000,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  },
+  {
+   "device": {
+    "did": "device-52",
+    "name": "light-52",
+    "isOnline": true
+   },
+   "room": "房间",
+   "kind": "light",
+   "group": true,
+   "props": [
+    {
+     "address": "light.on",
+     "siid": 2,
+     "piid": 1,
+     "format": "bool",
+     "readable": true,
+     "writable": true
+    },
+    {
+     "address": "light.brightness",
+     "siid": 2,
+     "piid": 2,
+     "format": "uint8",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1,
+      100,
+      1
+     ],
+     "unit": "percentage"
+    },
+    {
+     "address": "light.color-temperature",
+     "siid": 2,
+     "piid": 3,
+     "format": "uint32",
+     "readable": true,
+     "writable": true,
+     "range": [
+      1700,
+      7000,
+      1
+     ],
+     "unit": "kelvin"
+    }
+   ],
+   "state": {
+    "light.on": false,
+    "light.brightness": 100,
+    "light.color-temperature": 4600
+   }
+  }
+ ]
+}

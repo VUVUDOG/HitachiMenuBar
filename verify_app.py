@@ -45,4 +45,5 @@ else:
     worker.chmod(0o700)
     subprocess.run(["swiftc", str(source), "-o", str(executable), "-target", args.arch + "-apple-macos13.0",
                     "-framework", "AppKit", "-framework", "SwiftUI", "-framework", "Security"], check=True)
-    subprocess.run([str(executable), str(temporary), str(worker)], check=True)
+    fixture = root / "docs" / "fixtures" / "accessories.json"
+    subprocess.run([str(executable), str(temporary), str(worker), str(fixture)], check=True)

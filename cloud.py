@@ -103,9 +103,9 @@ class XiaomiCloud:
         return self.set_properties(device, spec, {field: value})
 
     def set_properties(self, device, spec, values):
-        """Validate every change first, then send them in one request and read them back together."""
+        """Air-conditioner fields: validate every change, send them together, read them back."""
         allowed = {"on", "mode", "target-temperature", "fan-level"}
-        changes = []
+        resolved = []
         for field, value in values.items():
             if field not in allowed:
                 raise CloudError("不支持这个控制功能")
@@ -114,40 +114,117 @@ class XiaomiCloud:
                           for p in s.get("properties", []) if f":{field}:" in p.get("type", "")]
             if len(properties) != 1:
                 raise CloudError("设备未提供唯一的控制属性")
-            service, prop = properties[0]
-            if "write" not in prop.get("access", []):
-                raise CloudError("该设备属性不可写")
-            if prop.get("format") == "bool":
-                if type(value) is not bool:
-                    raise CloudError("开关值必须是 true 或 false")
-            elif type(value) not in (int, float):
-                raise CloudError("控制值必须是数字")
-            if options := prop.get("value-list"):
-                if value not in [o["value"] for o in options]:
-                    raise CloudError("控制值不在设备支持的选项中")
-            if limits := prop.get("value-range"):
+            resolved.append((properties[0][0], properties[0][1], value))
+        return self._apply(device, resolved, "空调控制未成功")
+
+    @staticmethod
+    def kind(urn):
+        parts = (urn or "").split(":")
+        return parts[3] if len(parts) > 3 else ""
+
+    @classmethod
+    def find_property(cls, spec, address):
+        """Resolve "service-kind.property-kind" (e.g. light.brightness) to one property.
+
+        The first matching service wins; when a service repeats a property kind,
+        the one with a value list (named options) is preferred."""
+        service_kind, _, prop_kind = address.partition(".")
+        for service in spec.get("services", []):
+            if cls.kind(service.get("type")) != service_kind:
+                continue
+            matches = [p for p in service.get("properties", []) if cls.kind(p.get("type")) == prop_kind]
+            if matches:
+                return service, next((p for p in matches if p.get("value-list")), matches[0])
+        return None, None
+
+    def set_addresses(self, device, spec, values):
+        """Generic accessory control by property address, validated against the device spec."""
+        resolved = []
+        for address, value in values.items():
+            service, prop = self.find_property(spec, address)
+            if not prop:
+                raise CloudError("设备未提供这个控制功能")
+            resolved.append((service, prop, value))
+        return self._apply(device, resolved, "设备控制未成功")
+
+    @staticmethod
+    def _validate(prop, value):
+        if "write" not in prop.get("access", []):
+            raise CloudError("该设备属性不可写")
+        if prop.get("format") == "bool":
+            if type(value) is not bool:
+                raise CloudError("开关值必须是 true 或 false")
+            return value
+        if type(value) not in (int, float):
+            raise CloudError("控制值必须是数字")
+        if prop.get("format", "").startswith(("uint", "int")):
+            if value != int(value):
+                raise CloudError("控制值必须是整数")
+            value = int(value)
+        if options := prop.get("value-list"):
+            if value not in [o["value"] for o in options]:
+                raise CloudError("控制值不在设备支持的选项中")
+        if limits := prop.get("value-range"):
+            low, high, step = limits
+            if not low <= value <= high or abs((value - low) / step - round((value - low) / step)) > 1e-6:
+                raise CloudError("数值超出设备范围或不符合调节步长")
+        return value
+
+    @staticmethod
+    def _matches(prop, expected, actual):
+        if actual == expected:
+            return True
+        # Some lights quantize brightness / colour temperature slightly.
+        if limits := prop.get("value-range"):
+            if isinstance(actual, (int, float)) and not isinstance(actual, bool):
                 low, high, step = limits
-                if not low <= value <= high or abs((value - low) / step - round((value - low) / step)) > 1e-6:
-                    raise CloudError("温度超出设备范围或不符合调节步长")
-            changes.append({"did": device["did"], "siid": service["iid"], "piid": prop["iid"], "value": value})
+                return abs(actual - expected) <= (high - low) * 0.02
+        return False
+
+    def _apply(self, device, resolved, failure):
+        changes, checks = [], []
+        for service, prop, value in resolved:
+            value = self._validate(prop, value)
+            change = {"did": device["did"], "siid": service["iid"], "piid": prop["iid"], "value": value}
+            changes.append(change)
+            # Write-only actions (e.g. curtain open/close) cannot be read back.
+            if "read" in prop.get("access", []):
+                checks.append((change, prop))
         if not changes:
             raise CloudError("没有需要发送的控制指令")
         result = self._request("miotspec/prop/set", {"params": changes})
-        if not isinstance(result, list) or len(result) != len(changes) or any(r.get("code") != 0 for r in result):
-            failed = [r for r in result if r.get("code") != 0] if isinstance(result, list) else []
+        # code 1 means the device accepted the command and executes it asynchronously.
+        if not isinstance(result, list) or len(result) != len(changes) or any(r.get("code") not in (0, 1) for r in result):
+            failed = [r for r in result if r.get("code") not in (0, 1)] if isinstance(result, list) else []
             code = failed[0].get("code", "unknown") if failed else "unknown"
-            raise CloudError(f"空调控制未成功（code={code}）")
+            raise CloudError(f"{failure}（code={code}）")
+        if not checks:
+            return result
         # A successful acknowledgement is not sufficient: read back every changed value.
         # Poll quickly so a confirmed change is reported as soon as the cloud reflects it.
-        query = [{k: v for k, v in change.items() if k != "value"} for change in changes]
+        query = [{k: v for k, v in change.items() if k != "value"} for change, _ in checks]
         for _ in range(10):
             time.sleep(0.4)
             state = self.api("miotspec/prop/get", {"params": query}) or []
-            if all(any(p.get("code") == 0 and p.get("value") == change["value"] and
+            if all(any(p.get("code") == 0 and self._matches(prop, change["value"], p.get("value")) and
                        p.get("siid") == change["siid"] and p.get("piid") == change["piid"] for p in state)
-                   for change in changes):
+                   for change, prop in checks):
                 return result
         raise CloudError("指令已发送，但暂未确认设备状态；请刷新查看")
+
+    def read_addresses(self, items):
+        """items: [(did, address, siid, piid)] -> {did: {address: value}} using batched reads."""
+        values = {}
+        for start in range(0, len(items), 10):
+            chunk = items[start:start + 10]
+            state = self.api("miotspec/prop/get", {"params": [
+                {"did": did, "siid": siid, "piid": piid} for did, _, siid, piid in chunk]}) or []
+            for did, address, siid, piid in chunk:
+                match = next((p for p in state if p.get("did") == did and p.get("siid") == siid
+                              and p.get("piid") == piid and p.get("code") == 0 and "value" in p), None)
+                if match:
+                    values.setdefault(did, {})[address] = match["value"]
+        return values
 
     def _request(self, path, payload):
         if not self.credentials:
@@ -187,6 +264,9 @@ class XiaomiCloud:
         # Remember each device's MiJia room so sensors can be paired with air conditioners.
         self.device_rooms = {did: room.get("name") for home in homes for room in home.get("roomlist") or []
                              if room.get("name") for did in room.get("dids") or []}
+        # Which MiJia home (by name) each device belongs to; accessories are limited to one home.
+        self.device_homes = {did: home.get("name") for home in homes for room in home.get("roomlist") or []
+                             for did in room.get("dids") or []}
         baseline = self.api("home/device_list", {
             "getVirtualModel": True, "getHuamiDevices": 1,
             "get_split_device": False, "support_smart_home": True}) or {}
@@ -208,6 +288,7 @@ class XiaomiCloud:
                     did = device.get("did")
                     if did:
                         devices.setdefault(did, {}).update(device)
+                        self.device_homes.setdefault(did, home.get("name"))
                 following = page.get("max_did") or ""
                 if not page.get("has_more") or not following or following in seen:
                     break

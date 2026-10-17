@@ -84,6 +84,94 @@ def read_climate(cloud, report):
             "sensor": sensor["device"].get("name")}
 
 
+# Accessory kinds offered in the panel and the property addresses each may expose.
+# Wall switches are deliberately excluded: they can cut power to smart lights.
+ACCESSORY_KINDS = ("light", "curtain", "outlet", "fan", "air-purifier", "bath-heater")
+CONTROL_ADDRESSES = (
+    "light.on", "light.brightness", "light.color-temperature",
+    "switch.on",
+    "fan.on", "fan.mode", "fan.fan-level", "fan.horizontal-swing",
+    "air-purifier.on", "air-purifier.mode", "air-purifier.fan-level",
+    "curtain.motor-control", "curtain.target-position",
+    "ptc-bath-heater.mode", "ptc-bath-heater.target-temperature",
+)
+READING_ADDRESSES = (
+    "curtain.current-position", "power-consumption.electric-power",
+    "environment.pm2.5-density", "environment.temperature", "environment.relative-humidity",
+)
+
+
+def accessory_props(spec):
+    """Only the whitelisted properties, with the metadata the panel needs to render them."""
+    props = []
+    for address in CONTROL_ADDRESSES + READING_ADDRESSES:
+        service, prop = XiaomiCloud.find_property(spec, address)
+        if not prop:
+            continue
+        access = prop.get("access", [])
+        if address in CONTROL_ADDRESSES and "write" not in access:
+            continue
+        if address in READING_ADDRESSES and "read" not in access:
+            continue
+        entry = {"address": address, "siid": service["iid"], "piid": prop["iid"],
+                 "format": prop.get("format"), "readable": "read" in access,
+                 "writable": address in CONTROL_ADDRESSES}
+        if prop.get("value-range"):
+            entry["range"] = prop["value-range"]
+        if prop.get("value-list"):
+            entry["options"] = [{"value": o["value"], "description": o.get("description", "")}
+                                for o in prop["value-list"]]
+        if prop.get("unit"):
+            entry["unit"] = prop["unit"]
+        props.append(entry)
+    return props
+
+
+def choose_home(cloud, summaries):
+    """The home that holds the air conditioners, otherwise the one with the most devices."""
+    homes = [cloud.device_homes.get(d["did"]) for d in summaries]
+    homes = [h for h in homes if h] or [h for h in cloud.device_homes.values() if h]
+    return max(set(homes), key=homes.count) if homes else None
+
+
+def discover_accessories(cloud, devices, home):
+    accessories = []
+    for device in devices:
+        did, model = device.get("did"), device.get("model")
+        if not did or not model or is_air_conditioner(device):
+            continue
+        if home and cloud.device_homes.get(did) != home:
+            continue
+        try:
+            spec = cloud.spec(model)
+        except (CloudError, requests.RequestException, ValueError, KeyError):
+            continue
+        kind = XiaomiCloud.kind((spec or {}).get("type"))
+        if kind not in ACCESSORY_KINDS:
+            continue
+        props = accessory_props(spec)
+        if not any(p["writable"] for p in props):
+            continue
+        accessories.append({"device": {k: device.get(k) for k in ("did", "name", "model", "isOnline")},
+                            "room": cloud.device_rooms.get(did) or "其他", "kind": kind,
+                            "group": model.startswith("mijia.light.group"), "props": props, "state": {}})
+    return accessories
+
+
+def read_accessories(cloud, accessories):
+    items = [(a["device"]["did"], p["address"], p["siid"], p["piid"])
+             for a in accessories if a["device"].get("isOnline", True) for p in a["props"] if p["readable"]]
+    try:
+        values = cloud.read_addresses(items)
+    except (CloudError, requests.RequestException, ValueError, KeyError):
+        return
+    for accessory in accessories:
+        did = accessory["device"]["did"]
+        if did in values:
+            accessory["state"] = values[did]
+            accessory["read_at"] = time.time()
+
+
 def main(argv=None):
     global store, session_output
     parser = argparse.ArgumentParser()
@@ -91,8 +179,9 @@ def main(argv=None):
     parser.add_argument("--logout", action="store_true", help="退出登录并清除本机设备缓存")
     parser.add_argument("--refresh", action="store_true", help="刷新已发现设备的状态")
     parser.add_argument("--room", help="指定已发现设备的标识")
-    parser.add_argument("--field", action="append", choices=["on", "mode", "target-temperature", "fan-level"],
-                        help="控制属性，可重复；与 --value 按顺序配对")
+    parser.add_argument("--field", action="append",
+                        help="控制属性（空调字段或配件地址如 light.on），可重复；与 --value 按顺序配对")
+    parser.add_argument("--scope", help="刷新时只读取该房间的配件")
     parser.add_argument("--value", action="append", help="JSON 控制值，可重复")
     parser.add_argument("--import-session", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--session-stdin", action="store_true", help=argparse.SUPPRESS)
@@ -148,29 +237,43 @@ def main(argv=None):
             if not (RUNTIME / "report.json").exists():
                 raise CloudError("请先同步空调设备")
             report = json.loads((RUNTIME / "report.json").read_text())
-            if "sensors" not in report:
-                # Reports from before thermometer support: discover rooms and sensors once.
+            if "sensors" not in report or "accessories" not in report:
+                # Reports from older versions: discover rooms, sensors and accessories once.
                 # A failed lookup must not block the air-conditioner refresh; retry next time.
                 try:
                     devices = cloud.devices()
                     for item in report["devices"]:
                         item["room"] = cloud.device_rooms.get(item["device"]["did"])
                     report["sensors"] = discover_sensors(cloud, devices)
+                    report["home"] = choose_home(cloud, [d["device"] for d in report["devices"]])
+                    report["accessories"] = discover_accessories(cloud, devices, report["home"])
+                    read_accessories(cloud, report["accessories"])
                 except (CloudError, requests.RequestException, ValueError, KeyError):
                     pass
             targets = report["devices"]
             if args.room or args.field or args.value:
                 if not (args.room and args.field and args.value and len(args.field) == len(args.value)):
                     raise CloudError("控制指令缺少房间、属性或数值")
+                changes = {field: json.loads(value) for field, value in zip(args.field, args.value)}
                 matches = [d for d in report["devices"] if d["device"]["did"] == args.room]
-                if len(matches) != 1 or not matches[0].get("spec"):
-                    raise CloudError("没有找到已验证的空调设备")
-                status("controlling", "正在发送指令并确认设备状态…")
-                item = matches[0]
-                cloud.set_properties(item["device"], item["spec"],
-                                     {field: json.loads(value) for field, value in zip(args.field, args.value)})
-                # Only the controlled room changed; other rooms keep their last reading.
-                targets = [item]
+                accessory = next((a for a in report.get("accessories", []) if a["device"]["did"] == args.room), None)
+                if accessory:
+                    allowed = {p["address"]: p for p in accessory["props"] if p["writable"]}
+                    if not set(changes) <= set(allowed):
+                        raise CloudError("该设备不支持这个控制功能")
+                    status("controlling", "正在发送指令并确认设备状态…")
+                    spec = cloud.spec(accessory["device"]["model"])
+                    cloud.set_addresses(accessory["device"], spec, changes)
+                    read_accessories(cloud, [accessory])
+                    targets = []
+                else:
+                    if len(matches) != 1 or not matches[0].get("spec"):
+                        raise CloudError("没有找到已验证的空调设备")
+                    status("controlling", "正在发送指令并确认设备状态…")
+                    item = matches[0]
+                    cloud.set_properties(item["device"], item["spec"], changes)
+                    # Only the controlled room changed; other rooms keep their last reading.
+                    targets = [item]
             else:
                 status("reading", "正在刷新空调状态…")
             for item in targets:
@@ -178,6 +281,9 @@ def main(argv=None):
                     item["state"] = cloud.read_state(item["device"], item["spec"])
             if not args.field:
                 read_climate(cloud, report)
+                # Accessories are many: refresh only the room being looked at.
+                scoped = [a for a in report.get("accessories", []) if not args.scope or a["room"] == args.scope]
+                read_accessories(cloud, scoped)
             report["read_at"] = time.time()
             write_json("report.json", report)
             status("complete", "设备状态已更新" if not args.field else "指令已执行，云端回读已确认")
@@ -205,8 +311,11 @@ def main(argv=None):
             except (CloudError, requests.RequestException, ValueError, KeyError) as exc:
                 report["message"] = str(exc) if isinstance(exc, CloudError) else "状态查询失败，需要检查接口兼容性。"
             reports.append(report)
-        full = {"devices": reports, "sensors": discover_sensors(cloud, devices),
-                "total_device_count": len(devices), "read_at": time.time()}
+        home = choose_home(cloud, summaries)
+        accessories = discover_accessories(cloud, devices, home)
+        read_accessories(cloud, accessories)
+        full = {"devices": reports, "sensors": discover_sensors(cloud, devices), "home": home,
+                "accessories": accessories, "total_device_count": len(devices), "read_at": time.time()}
         read_climate(cloud, full)
         write_json("report.json", full)
         if not summaries:

@@ -37,6 +37,42 @@ struct RoomReading: Identifiable {
     let message: String?
     var indoor: Double? = nil
     var humidity: Double? = nil
+    var room: String? = nil
+    var area: String { room ?? name.replacingOccurrences(of: "空调", with: "") }
+}
+
+// A whitelisted MiJia device property, addressed as "service-kind.property-kind".
+struct AccessoryProp {
+    let address: String
+    let format: String
+    let readable: Bool
+    let writable: Bool
+    let range: [Double]?
+    let options: [ControlOption]
+    var isBool: Bool { format == "bool" }
+}
+
+// Lights, curtains, outlets, fans, purifiers and bath heaters in the same MiJia home.
+struct Accessory: Identifiable {
+    let id: String
+    let name: String
+    let room: String
+    let kind: String
+    let group: Bool
+    let online: Bool
+    let props: [AccessoryProp]
+    var values: [String: AnyHashable]
+
+    static let primaryAddress = ["light": "light.on", "outlet": "switch.on", "fan": "fan.on", "air-purifier": "air-purifier.on"]
+    var primary: String? { Self.primaryAddress[kind].flatMap { address in props.contains { $0.address == address } ? address : nil } }
+    var isOn: Bool? {
+        if let primary = primary { return values[primary]?.base as? Bool }
+        if kind == "bath-heater" { return (values["ptc-bath-heater.mode"]?.base as? Double).map { $0 != 0 } }
+        if kind == "curtain" { return (values["curtain.current-position"]?.base as? Double).map { $0 > 0 } }
+        return nil
+    }
+    func prop(_ address: String) -> AccessoryProp? { props.first { $0.address == address } }
+    func number(_ address: String) -> Double? { values[address]?.base as? Double }
 }
 
 final class AppModel: ObservableObject {
@@ -45,6 +81,9 @@ final class AppModel: ObservableObject {
     @Published var qr: NSImage?
     @Published var rooms: [RoomReading] = []
     @Published var selectedID = UserDefaults.standard.string(forKey: "selectedRoom") ?? ""
+    @Published var accessories: [Accessory] = []
+    @Published var selectedArea = UserDefaults.standard.string(forKey: "selectedArea") ?? ""
+    var scopedReads: [String: Date] = [:]
     @Published var readAt: Date?
     @Published var active = false {
         didSet { if oldValue && !active { DispatchQueue.main.async { [weak self] in self?.workerFinished() } } }
@@ -113,9 +152,61 @@ final class AppModel: ObservableObject {
         if let value = changes["fan-level"]?.base as? Int { room.fan = value }
         return room
     }
+    var hasDevices: Bool { !rooms.isEmpty || !accessories.isEmpty }
+
+    // Rooms with air conditioners first (in their usual order), then the busiest other rooms.
+    var areas: [String] {
+        var names: [String] = []
+        for room in rooms where !names.contains(room.area) { names.append(room.area) }
+        let counts = Dictionary(grouping: accessories, by: \.room).mapValues(\.count)
+        for name in counts.keys.sorted(by: { counts[$0]! != counts[$1]! ? counts[$0]! > counts[$1]! : $0 < $1 })
+            where !names.contains(name) { names.append(name) }
+        return names
+    }
+    var area: String { areas.contains(selectedArea) ? selectedArea : (selected?.area ?? areas.first ?? "") }
+    // The air conditioner card shows only when the selected room has one.
+    var areaRoom: RoomReading? { rooms.first { $0.area == area }.map(overlaid) }
+
+    static let kindOrder = ["light", "curtain", "bath-heater", "air-purifier", "fan", "outlet"]
+    var areaAccessories: [Accessory] {
+        accessories.filter { $0.room == area }.map(overlaid).sorted {
+            if $0.group != $1.group { return $0.group }
+            let a = Self.kindOrder.firstIndex(of: $0.kind) ?? 9, b = Self.kindOrder.firstIndex(of: $1.kind) ?? 9
+            return a != b ? a < b : $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }
+    }
+    func areaActive(_ name: String) -> Bool {
+        rooms.contains { $0.area == name && overlaid($0).power == true } ||
+            accessories.contains { $0.room == name && $0.kind != "curtain" && overlaid($0).isOn == true }
+    }
+    func areaTemperature(_ name: String) -> Double? { rooms.first { $0.area == name }?.indoor }
+
+    func selectArea(_ name: String) {
+        selectedArea = name
+        UserDefaults.standard.set(name, forKey: "selectedArea")
+        if let room = rooms.first(where: { $0.area == name }) { selectedID = room.id }
+        updateTitle()
+        // Accessory states are read per room; refresh a room that has not been read recently.
+        if accessories.contains(where: { $0.room == name }), Date().timeIntervalSince(scopedReads[name] ?? .distantPast) > 15 {
+            refresh(automatic: true)
+        }
+    }
+
+    func overlaid(_ accessory: Accessory) -> Accessory {
+        var item = accessory
+        var changes = inFlight?.room == item.id ? inFlight?.changes ?? [:] : [:]
+        changes.merge(pending[item.id] ?? [:]) { $1 }
+        for (address, value) in changes where address != "curtain.motor-control" { item.values[address] = value }
+        return item
+    }
+
+    func displayName(_ id: String) -> String? {
+        rooms.first { $0.id == id }?.name ?? accessories.first { $0.id == id }?.name
+    }
+
     var busy: Bool { active || ["starting", "authenticating", "awaiting_scan", "reading", "controlling"].contains(phase) }
     var controlling: Bool { active && process?.arguments?.contains("--field") == true }
-    var canLogout: Bool { authState == "authenticated" || authState == "pending" || !rooms.isEmpty }
+    var canLogout: Bool { authState == "authenticated" || authState == "pending" || hasDevices }
 
     static func translated(_ text: String) -> String {
         let map = ["cool": "制冷", "heat": "制热", "dry": "除湿", "fan": "送风", "auto": "自动",
@@ -132,7 +223,7 @@ final class AppModel: ObservableObject {
         let authenticated = authState == "legacy" || authState == "authenticated"
         if !authenticated || sessionGeneration != generation { forgetSession() }
         if !authenticated {
-            rooms = []; readAt = nil; selectedID = ""
+            rooms = []; accessories = []; readAt = nil; selectedID = ""
             if !active && phase != "error" { qr = nil; phase = "logged_out"; message = authState == "pending" ? "上次扫码未完成，请重新登录" : "请扫码登录米家" }
         }
         if let data = try? Data(contentsOf: runtime.appendingPathComponent("status.json")), forceStatus || data != lastStatus,
@@ -187,15 +278,50 @@ final class AppModel: ObservableObject {
                     modes: options("mode"), fans: options("fan-level"), writable: writable,
                     minimum: limits[0], maximum: limits[1], step: limits[2], message: item["message"] as? String,
                     indoor: (item["climate"] as? [String: Any])?["temperature"] as? Double,
-                    humidity: (item["climate"] as? [String: Any])?["humidity"] as? Double)
+                    humidity: (item["climate"] as? [String: Any])?["humidity"] as? Double,
+                    room: item["room"] as? String)
             }
+            accessories = (report["accessories"] as? [[String: Any]] ?? []).compactMap(Self.accessory)
             if !rooms.contains(where: { $0.id == selectedID }) { selectedID = rooms.first?.id ?? "" }
         }
+        if let room = rooms.first(where: { $0.area == area }), room.id != selectedID { selectedID = room.id }
         UserDefaults.standard.set(selectedID, forKey: "selectedRoom")
         if active && phase == "authenticating", let startedAt = startedAt, Date().timeIntervalSince(startedAt) > 12 {
             message = "请允许系统钥匙串访问，或从设置重新扫码登录"
         }
         updateTitle()
+    }
+
+    static func accessory(_ item: [String: Any]) -> Accessory? {
+        guard let device = item["device"] as? [String: Any], let did = device["did"] as? String,
+              let kind = item["kind"] as? String else { return nil }
+        let props: [AccessoryProp] = (item["props"] as? [[String: Any]] ?? []).compactMap { prop in
+            guard let address = prop["address"] as? String else { return nil }
+            let options = (prop["options"] as? [[String: Any]] ?? []).compactMap { option -> ControlOption? in
+                guard let value = option["value"] as? Int else { return nil }
+                return ControlOption(id: value, label: Self.optionLabel(option["description"] as? String ?? "\(value)"))
+            }
+            return AccessoryProp(address: address, format: prop["format"] as? String ?? "",
+                                 readable: prop["readable"] as? Bool ?? false, writable: prop["writable"] as? Bool ?? false,
+                                 range: (prop["range"] as? [NSNumber])?.map(\.doubleValue), options: options)
+        }
+        var values: [String: AnyHashable] = [:]
+        for (address, raw) in item["state"] as? [String: Any] ?? [:] {
+            guard let prop = props.first(where: { $0.address == address }), let number = raw as? NSNumber else { continue }
+            values[address] = prop.isBool ? AnyHashable(number.boolValue) : AnyHashable(number.doubleValue)
+        }
+        return Accessory(id: did, name: device["name"] as? String ?? "设备", room: item["room"] as? String ?? "其他",
+                         kind: kind, group: item["group"] as? Bool ?? false, online: device["isOnline"] as? Bool ?? true,
+                         props: props, values: values)
+    }
+
+    static func optionLabel(_ text: String) -> String {
+        let map = ["idle": "待机", "fan": "吹风", "heat": "暖风", "dry": "干燥", "defog": "除雾", "disinfect": "消毒",
+                   "auto": "自动", "sleep": "睡眠", "strong": "强力", "none": "手动", "low": "低", "medium": "中",
+                   "high": "高", "quiet": "静音", "straight wind": "直吹风", "natural wind": "自然风",
+                   "level1": "1 档", "level2": "2 档", "level3": "3 档", "level4": "4 档",
+                   "open": "打开", "close": "关闭", "pause": "暂停"]
+        return map[text.lowercased()] ?? text
     }
 
     func updateTitle() {
@@ -399,7 +525,7 @@ final class AppModel: ObservableObject {
         guard !controlling else { return false }
         let previousProcess = process
         flushWork?.cancel(); flushWork = nil
-        pending = [:]; inFlight = nil
+        pending = [:]; inFlight = nil; accessories = []
         authorizationID = nil
         process = nil
         active = false
@@ -443,7 +569,12 @@ final class AppModel: ObservableObject {
     }
     func refresh(automatic: Bool = false) {
         guard !automatic || (!automaticRefreshSuspended && pending.isEmpty && inFlight == nil) else { return }
-        run(arguments: rooms.isEmpty ? [] : ["--refresh"], label: "正在刷新状态…")
+        guard hasDevices else { run(arguments: [], label: "正在刷新状态…"); return }
+        // Air conditioners and thermometers are always read; accessories only for the room on screen.
+        let scope = area
+        guard !busy else { return }
+        run(arguments: ["--refresh"] + (scope.isEmpty ? [] : ["--scope", scope]), label: "正在刷新状态…")
+        if active { scopedReads[scope] = Date() }
     }
     func resync() { run(arguments: [], label: "正在同步房间列表…") }
     // Record the intent immediately; repeated taps replace the queued value
@@ -459,6 +590,22 @@ final class AppModel: ObservableObject {
         }
         pending[room.id] = changes.isEmpty ? nil : changes
         updateTitle()
+        scheduleFlush(after: delay)
+    }
+
+    // Accessories share the optimistic queue with air conditioners, keyed by device id.
+    func setAccessory(_ id: String, _ address: String, value: AnyHashable, delay: TimeInterval = 0.05) {
+        guard let item = accessories.first(where: { $0.id == id }), item.online,
+              item.prop(address)?.writable == true else { return }
+        var changes = pending[id] ?? [:]
+        let reported = item.values[address]
+        let action = address == "curtain.motor-control"
+        if !action, inFlight?.room != id || inFlight?.changes[address] == nil, reported == value {
+            changes[address] = nil
+        } else {
+            changes[address] = value
+        }
+        pending[id] = changes.isEmpty ? nil : changes
         scheduleFlush(after: delay)
     }
 
@@ -484,16 +631,17 @@ final class AppModel: ObservableObject {
         flushWork = nil
         guard inFlight == nil, !busy, !pending.isEmpty else { return }
         let id = pending[selectedID] != nil ? selectedID : pending.keys.sorted()[0]
-        guard let room = rooms.first(where: { $0.id == id }), let changes = pending[id] else { pending[id] = nil; return }
+        guard let name = displayName(id), let changes = pending[id] else { pending[id] = nil; return }
         var arguments = ["--room", id]
-        for field in ["on", "mode", "target-temperature", "fan-level"] {
+        let order = ["on", "mode", "target-temperature", "fan-level"]
+        for field in order + changes.keys.filter({ !order.contains($0) }).sorted() {
             guard let value = changes[field], let data = try? JSONSerialization.data(withJSONObject: value.base, options: [.fragmentsAllowed]),
                   let json = String(data: data, encoding: .utf8) else { continue }
             arguments += ["--field", field, "--value", json]
         }
         inFlight = ControlCommand(room: id, changes: changes)
         pending[id] = nil
-        run(arguments: arguments, label: "正在同步到\(room.name)…")
+        run(arguments: arguments, label: "正在同步到\(name)…")
         if !active { workerFinished() }
     }
 
@@ -506,7 +654,7 @@ final class AppModel: ObservableObject {
             if phase != "complete" {
                 pending[command.room] = pending[command.room]?.filter { command.changes[$0.key] == nil || $0.value != command.changes[$0.key] }
                 if pending[command.room]?.isEmpty == true { pending[command.room] = nil }
-                if let name = rooms.first(where: { $0.id == command.room })?.name, !message.contains(name) {
+                if let name = displayName(command.room), !message.contains(name) {
                     message = "\(name)未调整成功，已恢复原状态：\(message)"
                 }
             }
@@ -733,11 +881,16 @@ struct ControlView: View {
     @ObservedObject var model: AppModel
     @ObservedObject var updater = Updater.shared
     @State private var draft = 26.0
+    @State private var expandedID: String?
     static let accent = Color(red: 0.45, green: 0.84, blue: 0.77)
 
     func roomIcon(_ name: String) -> String {
         if name.contains("卧") { return "bed.double" }
         if name.contains("书") { return "desktopcomputer" }
+        if name.contains("厨") || name.contains("餐") { return symbol("fork.knife", fallback: "house") }
+        if name.contains("卫") || name.contains("浴") { return symbol("shower", fallback: "drop") }
+        if name.contains("阳台") { return symbol("sun.horizon", fallback: "sun.max") }
+        if name.contains("走廊") || name.contains("玄关") { return symbol("door.left.hand.closed", fallback: "house") }
         return "sofa"
     }
     func modeIcon(_ label: String) -> String {
@@ -751,13 +904,13 @@ struct ControlView: View {
                 .background(Self.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 4) {
                 Text("日立空调").font(.system(size: 16, weight: .semibold))
-                Text(model.rooms.isEmpty ? "让舒适触手可及" : "\(model.rooms.count) 个房间 · \(model.displayRooms.filter { $0.power == true }.count) 台运行")
+                Text(!model.hasDevices ? "让舒适触手可及" : "\(model.areas.count) 个房间 · 空调 \(model.displayRooms.filter { $0.power == true }.count) 台运行 · \(model.accessories.map(model.overlaid).filter { $0.kind != "curtain" && $0.isOn == true }.count) 个设备开着")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer()
             Menu {
-                Button("同步房间") { model.resync() }.disabled(model.busy || (model.rooms.isEmpty && model.authState != "authenticated"))
-                Button(model.rooms.isEmpty ? "扫码登录米家" : "重新登录米家") { model.login() }.disabled(model.controlling)
+                Button("同步房间") { model.resync() }.disabled(model.busy || (!model.hasDevices && model.authState != "authenticated"))
+                Button(!model.hasDevices ? "扫码登录米家" : "重新登录米家") { model.login() }.disabled(model.controlling)
                 Divider()
                 Button("退出登录") { model.logout() }.disabled(model.controlling || !model.canLogout)
                 Divider()
@@ -781,23 +934,49 @@ struct ControlView: View {
     }
 
     var roomTabs: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(model.displayRooms) { room in
-                let selected = model.selectedID == room.id
-                Button { model.selectedID = room.id; model.poll() } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: roomIcon(room.name)).font(.system(size: 13)).frame(width: 18)
-                        Text(room.name.replacingOccurrences(of: "空调", with: "")).font(.system(size: 12, weight: .medium)).lineLimit(1)
-                        Spacer(minLength: 0)
-                        if let indoor = room.indoor {
-                            Text(String(format: "%.1f°", indoor)).font(.system(size: 11)).monospacedDigit()
-                                .foregroundStyle(.white.opacity(selected ? 0.75 : 0.45))
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
+            ForEach(model.areas, id: \.self) { name in
+                let selected = model.area == name
+                Button { model.selectArea(name) } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 5) {
+                            Image(systemName: roomIcon(name)).font(.system(size: 11)).frame(width: 14)
+                            Text(name).font(.system(size: 12, weight: .medium)).lineLimit(1)
                         }
-                        Circle().fill(room.power == true ? Self.accent : Color.white.opacity(0.2)).frame(width: 5, height: 5)
+                        HStack(spacing: 4) {
+                            Circle().fill(model.areaActive(name) ? Self.accent : Color.white.opacity(0.2)).frame(width: 5, height: 5)
+                            Text(model.areaTemperature(name).map { String(format: "%.1f°", $0) } ?? " ")
+                                .font(.system(size: 10)).monospacedDigit().foregroundStyle(.white.opacity(selected ? 0.75 : 0.45))
+                        }
                     }.foregroundStyle(selected ? Self.accent : .white.opacity(0.65))
-                        .padding(.horizontal, 12).padding(.vertical, 10).modifier(Surface(selected: selected))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 9).padding(.vertical, 8).modifier(Surface(selected: selected, radius: 11))
                 }.buttonStyle(.plain)
             }
+        }
+    }
+
+    // The device list scrolls inside a height that leaves room for the rest of the panel.
+    func accessoryList(_ items: [Accessory], withClimate: Bool) -> some View {
+        let screen = NSScreen.main?.visibleFrame.height ?? 900
+        // About 700pt (with an air conditioner card) or 300pt (without) is used by the rest of the panel.
+        let cap = max(150, min(withClimate ? 360 : 640, screen - (withClimate ? 720 : 310)))
+        let content = items.reduce(0) { $0 + AccessoryRow.height($1, expanded: expandedID == $1.id) + 6 }
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("设备").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                Spacer()
+                Text("\(items.count) 个").font(.system(size: 10)).foregroundStyle(.tertiary)
+            }
+            ScrollView(.vertical, showsIndicators: content > cap) {
+                VStack(spacing: 6) {
+                    ForEach(items) { item in
+                        AccessoryRow(item: item, model: model, expanded: expandedID == item.id) {
+                            expandedID = expandedID == item.id ? nil : item.id
+                        }
+                    }
+                }
+            }.frame(height: min(content, cap))
         }
     }
 
@@ -939,7 +1118,7 @@ struct ControlView: View {
                 if let date = model.readAt { Text("更新于 \(date.formatted(date: .omitted, time: .standard))").font(.system(size: 10)).foregroundStyle(.tertiary) }
             }
             Spacer(minLength: 4)
-            if !model.rooms.isEmpty {
+            if model.hasDevices {
                 Button { model.refresh() } label: { Image(systemName: "arrow.clockwise").font(.system(size: 13)).frame(width: 30, height: 30) }
                     .buttonStyle(QuietIconStyle()).disabled(model.busy).help("刷新空调状态").accessibilityLabel("刷新空调状态")
             }
@@ -949,11 +1128,15 @@ struct ControlView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
-            if let room = model.selected {
+            if model.hasDevices {
                 roomTabs
-                temperatureCard(room)
-                options(room)
-                if let message = room.message { Text(message).font(.caption).foregroundStyle(.secondary) }
+                if let room = model.areaRoom {
+                    temperatureCard(room)
+                    options(room)
+                    if let message = room.message { Text(message).font(.caption).foregroundStyle(.secondary) }
+                }
+                let items = model.areaAccessories
+                if !items.isEmpty { accessoryList(items, withClimate: model.areaRoom != nil) }
             } else { loginContent }
             if updater.latest != nil || updater.note != nil { updateBanner }
             Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1)
@@ -966,6 +1149,179 @@ struct ControlView: View {
             .onAppear { draft = model.selected?.target ?? 26 }
             .onChange(of: model.selectedID) { _ in draft = model.selected?.target ?? 26 }
             .onChange(of: model.selected?.target) { value in draft = value ?? 26 }
+    }
+}
+
+func symbol(_ name: String, fallback: String) -> String {
+    NSImage(systemSymbolName: name, accessibilityDescription: nil) == nil ? fallback : name
+}
+
+struct AccessoryRow: View {
+    let item: Accessory
+    @ObservedObject var model: AppModel
+    let expanded: Bool
+    let onTap: () -> Void
+    @State private var drafts: [String: Double] = [:]
+
+    // Fixed element heights keep the scroll area's measured height exact.
+    static let rowHeight: CGFloat = 46
+    static func controls(_ item: Accessory) -> [AccessoryProp] {
+        item.props.filter { $0.writable && $0.address != item.primary }
+    }
+    static func controlHeight(_ prop: AccessoryProp) -> CGFloat {
+        if prop.isBool { return 26 }
+        if prop.address == "curtain.motor-control" { return 28 }
+        if !prop.options.isEmpty { return prop.options.count > 4 ? 66 : 44 }
+        return 42
+    }
+    static func height(_ item: Accessory, expanded: Bool) -> CGFloat {
+        guard expanded, item.online else { return rowHeight }
+        let parts = controls(item)
+        return rowHeight + parts.reduce(0) { $0 + controlHeight($1) } + CGFloat(parts.count) * 8
+    }
+
+    var icon: String {
+        switch item.kind {
+        case "light": return item.group ? symbol("lightbulb.2", fallback: "lightbulb") : "lightbulb"
+        case "curtain": return symbol("blinds.horizontal.closed", fallback: "rectangle.split.3x1")
+        case "outlet": return symbol("powerplug", fallback: "bolt")
+        case "fan": return symbol("fan", fallback: "wind")
+        case "air-purifier": return symbol("air.purifier", fallback: "aqi.medium")
+        default: return symbol("heater.vertical", fallback: "flame")
+        }
+    }
+
+    func label(_ prop: AccessoryProp) -> String {
+        let (service, field) = { () -> (String, String) in
+            let parts = prop.address.split(separator: ".", maxSplits: 1).map(String.init)
+            return (parts[0], parts.count > 1 ? parts[1] : "")
+        }()
+        if field == "on" { return ["light": "照明", "fan": "风扇", "switch": "电源", "air-purifier": "电源"][service] ?? "开关" }
+        return ["brightness": "亮度", "color-temperature": "色温", "target-position": "开合", "fan-level": "风速",
+                "mode": "模式", "horizontal-swing": "摇头", "target-temperature": "目标温度", "motor-control": "窗帘"][field] ?? field
+    }
+
+    func formatted(_ prop: AccessoryProp, _ value: Double) -> String {
+        if prop.address.hasSuffix("color-temperature") { return "\(Int(value))K" }
+        if prop.address.hasSuffix("target-temperature") { return "\(Int(value))°" }
+        return "\(Int(value))%"
+    }
+
+    func option(_ address: String) -> String? {
+        guard let prop = item.prop(address), let value = item.number(address) else { return nil }
+        return prop.options.first { Double($0.id) == value }?.label
+    }
+
+    var summary: String {
+        guard item.online else { return "离线" }
+        if item.values.isEmpty { return "等待读取" }
+        switch item.kind {
+        case "light":
+            guard item.isOn == true else { return "已关闭" }
+            return [item.number("light.brightness").map { "亮度 \(Int($0))%" },
+                    item.number("light.color-temperature").map { "\(Int($0))K" },
+                    item.values["fan.on"]?.base as? Bool == true ? "风扇开" : nil].compactMap { $0 }.joined(separator: " · ")
+        case "curtain":
+            return (item.number("curtain.current-position") ?? item.number("curtain.target-position")).map { "开合 \(Int($0))%" } ?? "—"
+        case "outlet":
+            let power = item.number("power-consumption.electric-power").map { String(format: "%.1fW", $0) }
+            return [item.isOn == true ? "已开启" : "已关闭", item.isOn == true ? power : nil].compactMap { $0 }.joined(separator: " · ")
+        case "air-purifier":
+            let pm = item.number("environment.pm2.5-density").map { "PM2.5 \(Int($0))" }
+            return [item.isOn == true ? option("air-purifier.mode") ?? "已开启" : "已关闭", pm].compactMap { $0 }.joined(separator: " · ")
+        case "fan":
+            guard item.isOn == true else { return "已关闭" }
+            return [option("fan.mode"), option("fan.fan-level"), item.values["fan.horizontal-swing"]?.base as? Bool == true ? "摇头" : nil]
+                .compactMap { $0 }.joined(separator: " · ")
+        default:
+            let light = item.values["light.on"]?.base as? Bool == true ? "照明开" : nil
+            let temp = item.number("environment.temperature").map { String(format: "%.0f°", $0) }
+            return [option("ptc-bath-heater.mode") ?? "—", light, temp].compactMap { $0 }.joined(separator: " · ")
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: icon).font(.system(size: 13))
+                    .foregroundStyle(item.isOn == true ? ControlView.accent : .white.opacity(0.55))
+                    .frame(width: 28, height: 28)
+                    .background((item.isOn == true ? ControlView.accent.opacity(0.14) : Color.white.opacity(0.05)), in: Circle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                    Text(summary).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 4)
+                if let primary = item.primary {
+                    Toggle("", isOn: Binding(get: { item.values[primary]?.base as? Bool ?? false },
+                                             set: { model.setAccessory(item.id, primary, value: $0) }))
+                        .toggleStyle(.switch).controlSize(.mini).labelsHidden().tint(ControlView.accent)
+                        .disabled(!item.online)
+                }
+                if item.online && !Self.controls(item).isEmpty {
+                    Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.4)).rotationEffect(.degrees(expanded ? 180 : 0))
+                }
+            }.frame(height: Self.rowHeight - 16).contentShape(Rectangle()).onTapGesture { if item.online { onTap() } }
+            if expanded && item.online {
+                ForEach(Self.controls(item), id: \.address) { prop in control(prop).frame(height: Self.controlHeight(prop)) }
+            }
+        }.padding(.horizontal, 10).padding(.vertical, 8)
+            .opacity(item.online ? 1 : 0.5)
+            .modifier(Surface(radius: 11))
+    }
+
+    @ViewBuilder func control(_ prop: AccessoryProp) -> some View {
+        if prop.isBool {
+            HStack {
+                Text(label(prop)).font(.system(size: 11)).foregroundStyle(.secondary)
+                Spacer()
+                Toggle("", isOn: Binding(get: { item.values[prop.address]?.base as? Bool ?? false },
+                                         set: { model.setAccessory(item.id, prop.address, value: $0) }))
+                    .toggleStyle(.switch).controlSize(.mini).labelsHidden().tint(ControlView.accent)
+            }
+        } else if prop.address == "curtain.motor-control" {
+            HStack(spacing: 6) {
+                ForEach([1, 0, 2], id: \.self) { value in
+                    if let option = prop.options.first(where: { $0.id == value }) {
+                        Button { model.setAccessory(item.id, prop.address, value: Double(value)) } label: {
+                            Text(option.label).font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.75))
+                                .frame(maxWidth: .infinity).frame(height: 26).modifier(Surface(radius: 8))
+                        }.buttonStyle(.plain)
+                    }
+                }
+            }
+        } else if !prop.options.isEmpty {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(label(prop)).font(.system(size: 11)).foregroundStyle(.secondary)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: min(prop.options.count, 4)), spacing: 5) {
+                    ForEach(prop.options) { option in
+                        let selected = item.number(prop.address) == Double(option.id)
+                        Button { model.setAccessory(item.id, prop.address, value: Double(option.id)) } label: {
+                            Text(option.label).font(.system(size: 11, weight: .medium)).lineLimit(1)
+                                .foregroundStyle(selected ? ControlView.accent : .white.opacity(0.65))
+                                .frame(maxWidth: .infinity).frame(height: 22).modifier(Surface(selected: selected, radius: 7))
+                        }.buttonStyle(.plain)
+                    }
+                }
+            }
+        } else if let range = prop.range, range.count == 3, range[1] > range[0] {
+            let step = prop.address.hasSuffix("color-temperature") ? max(range[2], 100) : range[2]
+            let current = drafts[prop.address] ?? item.number(prop.address) ?? range[0]
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text(label(prop)).font(.system(size: 11)).foregroundStyle(.secondary)
+                    Spacer()
+                    Text(formatted(prop, current)).font(.system(size: 11)).monospacedDigit().foregroundStyle(.white.opacity(0.75))
+                }
+                Slider(value: Binding(get: { min(max(current, range[0]), range[1]) }, set: { drafts[prop.address] = $0 }),
+                       in: range[0]...range[1], step: step) { editing in
+                    guard !editing, let value = drafts[prop.address] else { return }
+                    model.setAccessory(item.id, prop.address, value: value.rounded(), delay: 0.3)
+                    drafts[prop.address] = nil
+                }.tint(ControlView.accent).controlSize(.small)
+            }
+        }
     }
 }
 
@@ -1113,7 +1469,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if !CommandLine.arguments.contains(where: { $0.hasPrefix("--preview=") }) { Updater.shared.start() }
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
-            guard let self = self, self.panel.isVisible, !self.model.busy, !self.model.rooms.isEmpty else { return }
+            guard let self = self, self.panel.isVisible, !self.model.busy, self.model.hasDevices else { return }
             self.model.refresh(automatic: true)
         }
     }
@@ -1123,7 +1479,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         else {
             positionPanel()
             panel.makeKeyAndOrderFront(nil)
-            if !model.rooms.isEmpty && !model.busy { model.refresh(automatic: true) }
+            if model.hasDevices && !model.busy { model.refresh(automatic: true) }
         }
     }
 

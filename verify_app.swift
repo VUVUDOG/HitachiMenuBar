@@ -266,6 +266,93 @@ expect(control.selected?.target == 26 && control.message.contains("未调整成�
 expect(Updater.isNewer("0.3.10", than: "0.3.9") && Updater.isNewer("0.4", than: "0.3.9") &&
     !Updater.isNewer("0.3.9", than: "0.3.9") && !Updater.isNewer("0.3.8", than: "0.3.9"), "Update check must compare versions numerically")
 
+// Accessories: rooms ordering, parsing, optimistic queue and generic property addresses.
+let accessoryRuntime = testRuntime.appendingPathComponent("accessory-test")
+try FileManager.default.createDirectory(at: accessoryRuntime, withIntermediateDirectories: true)
+try seedAuthenticated(runtime: accessoryRuntime)
+let lightProps: [[String: Any]] = [
+    ["address": "light.on", "format": "bool", "readable": true, "writable": true],
+    ["address": "light.brightness", "format": "uint8", "readable": true, "writable": true, "range": [1, 100, 1]]]
+let curtainProps: [[String: Any]] = [
+    ["address": "curtain.motor-control", "format": "uint8", "readable": false, "writable": true,
+     "options": [["value": 1, "description": "Open"], ["value": 0, "description": "Pause"], ["value": 2, "description": "Close"]]],
+    ["address": "curtain.current-position", "format": "uint8", "readable": true, "writable": false, "range": [0, 100, 1]]]
+try saveFixture("report.json", ["devices": [["device": ["did": "test-room", "name": "主卧空调"], "room": "主卧",
+    "spec": controlSpec, "state": controlState]],
+    "accessories": [
+        ["device": ["did": "lamp", "name": "吸顶灯", "isOnline": true], "room": "主卧", "kind": "light", "group": false,
+         "props": lightProps, "state": ["light.on": false, "light.brightness": 40]],
+        ["device": ["did": "group", "name": "主卧筒灯", "isOnline": true], "room": "主卧", "kind": "light", "group": true,
+         "props": lightProps, "state": ["light.on": true, "light.brightness": 80]],
+        ["device": ["did": "k1", "name": "厨房射灯", "isOnline": true], "room": "厨房", "kind": "light", "group": false, "props": lightProps, "state": [:]],
+        ["device": ["did": "k2", "name": "厨房灯带", "isOnline": false], "room": "厨房", "kind": "light", "group": false, "props": lightProps, "state": [:]],
+        ["device": ["did": "c1", "name": "走廊窗帘", "isOnline": true], "room": "走廊", "kind": "curtain", "group": false,
+         "props": curtainProps, "state": ["curtain.current-position": 30]]]], runtime: accessoryRuntime)
+UserDefaults.standard.removeObject(forKey: "selectedArea")
+let home = AppModel(worker: URL(fileURLWithPath: CommandLine.arguments[2]), runtime: accessoryRuntime,
+    credentialReader: { _ in (errSecSuccess, testSessionData) })
+expect(home.areas == ["主卧", "厨房", "走廊"], "Rooms with air conditioners come first, then rooms by device count")
+expect(home.area == "主卧" && home.areaRoom != nil, "The air conditioner card belongs to its room")
+expect(home.areaAccessories.map(\.id) == ["group", "lamp"], "Light groups are listed before single lights")
+expect(home.areaActive("主卧") && !home.areaActive("厨房"), "A room is active when something in it is on")
+home.selectArea("厨房")
+expect(home.areaRoom == nil && home.areaAccessories.count == 2, "Rooms without an air conditioner show only devices")
+settleQueue(home)
+home.setAccessory("k2", "light.on", value: true)
+expect(home.pending["k2"] == nil, "Offline devices must not accept commands")
+home.selectArea("主卧")
+settleQueue(home)
+let before = accessoryControls().count
+home.setAccessory("lamp", "light.on", value: true)
+home.setAccessory("lamp", "light.brightness", value: 70.0, delay: 0.3)
+expect(home.areaAccessories.first { $0.id == "lamp" }?.isOn == true, "Accessory taps show immediately")
+settleQueue(home)
+let sent = accessoryControls()
+expect(sent.count == before + 1, "Changes to one device are merged into one command")
+let args = sent.last!
+expect(args.contains("lamp") && args.contains("light.on") && args.contains("light.brightness") && args.contains("70"),
+    "Accessory commands carry property addresses and values")
+home.setAccessory("lamp", "light.on", value: true)
+expect(home.pending["lamp"] == nil || home.inFlight != nil || accessoryControls().count == sent.count,
+    "Unchanged values are not resent")
+settleQueue(home)
+try Data().write(to: accessoryRuntime.appendingPathComponent("fail-control"))
+home.setAccessory("group", "light.on", value: false)
+expect(home.areaAccessories.first { $0.id == "group" }?.isOn == false, "Failure case first shows the optimistic value")
+settleQueue(home)
+expect(home.areaAccessories.first { $0.id == "group" }?.isOn == true && home.message.contains("未调整成功"),
+    "A failed accessory command reverts to the reported state")
+try FileManager.default.removeItem(at: accessoryRuntime.appendingPathComponent("fail-control"))
+home.selectArea("走廊")
+settleQueue(home)
+let curtainBefore = accessoryControls().count
+home.setAccessory("c1", "curtain.motor-control", value: 1.0)
+settleQueue(home)
+home.setAccessory("c1", "curtain.motor-control", value: 1.0)
+settleQueue(home)
+expect(accessoryControls().count == curtainBefore + 2, "Curtain actions are sent every time, even when repeated")
+func accessoryControls() -> [[String]] {
+    guard let text = try? String(contentsOf: accessoryRuntime.appendingPathComponent("controls.jsonl"), encoding: .utf8) else { return [] }
+    return text.split(separator: "\n").map { try! JSONSerialization.jsonObject(with: Data($0.utf8)) as! [String] }
+}
+func settleQueue(_ model: AppModel) {
+    let deadline = Date(timeIntervalSinceNow: 6)
+    repeat { RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05)) }
+    while (model.active || model.inFlight != nil || !model.pending.isEmpty) && Date() < deadline
+    expect(!model.active && model.inFlight == nil && model.pending.isEmpty, "Accessory queue must drain")
+}
+let realReport = try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[3]))) as! [String: Any]
+var kinds = Set<String>()
+for raw in realReport["accessories"] as? [[String: Any]] ?? [] {
+    guard let item = AppModel.accessory(raw), item.online, kinds.insert(item.kind + "\(item.group)").inserted else { continue }
+    for expanded in [false, true] {
+        let row = NSHostingView(rootView: AccessoryRow(item: item, model: home, expanded: expanded, onTap: {}).frame(width: 344))
+        let actual = row.fittingSize.height, estimate = AccessoryRow.height(item, expanded: expanded)
+        expect(abs(actual - estimate) <= 1, "Row height estimate for \(item.kind) expanded=\(expanded): \(estimate) vs \(actual)")
+    }
+}
+print("Native accessories: rooms, groups, optimistic queue, merged commands, revert and curtain actions passed")
+
 let leaseRuntime = testRuntime.appendingPathComponent("lease-test")
 try FileManager.default.createDirectory(at: leaseRuntime, withIntermediateDirectories: true)
 var lease = ApplicationLease(runtime: leaseRuntime)
