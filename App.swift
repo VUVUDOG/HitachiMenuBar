@@ -326,8 +326,8 @@ final class AppModel: ObservableObject {
 
     func updateTitle() {
         if let room = selected, let temp = room.target {
-            titleChanged?(room.power == true ? " \(Int(temp))°" : " 空调")
-        } else { titleChanged?(" 空调") }
+            titleChanged?(room.power == true ? " \(Int(temp))°" : " 米家")
+        } else { titleChanged?(" 米家") }
     }
 
     func run(arguments: [String], label: String) {
@@ -555,7 +555,7 @@ final class AppModel: ObservableObject {
         rooms = []; readAt = nil; selectedID = ""
         lastReport = Data(); lastStatus = Data()
         UserDefaults.standard.removeObject(forKey: "selectedRoom")
-        titleChanged?(" 空调")
+        titleChanged?(" 米家")
         return true
     }
 
@@ -722,7 +722,7 @@ final class Updater: ObservableObject {
         }
         launchAtLogin = SMAppService.mainApp.status == .enabled
         if enabled && SMAppService.mainApp.status == .requiresApproval {
-            show("请在系统设置的“登录项”中允许日立空调", for: 6)
+            show("请在系统设置的“登录项”中允许米家", for: 6)
             SMAppService.openSystemSettingsLoginItems()
         }
     }
@@ -899,11 +899,11 @@ struct ControlView: View {
 
     var header: some View {
         HStack(spacing: 11) {
-            Image(systemName: "air.conditioner.horizontal.fill").font(.system(size: 18))
+            Image(systemName: "house.fill").font(.system(size: 17))
                 .foregroundStyle(Self.accent).frame(width: 38, height: 38)
                 .background(Self.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 4) {
-                Text("日立空调").font(.system(size: 16, weight: .semibold))
+                Text("米家").font(.system(size: 16, weight: .semibold))
                 Text(!model.hasDevices ? "让舒适触手可及" : "\(model.areas.count) 个房间 · 空调 \(model.displayRooms.filter { $0.power == true }.count) 台运行 · \(model.accessories.map(model.overlaid).filter { $0.kind != "curtain" && $0.isOn == true }.count) 个设备开着")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             }
@@ -1415,14 +1415,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.toggle()
         }
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.image = NSImage(systemSymbolName: "air.conditioner.horizontal", accessibilityDescription: "日立空调")
-        item.button?.title = " 空调"
+        item.button?.image = NSImage(systemSymbolName: "house", accessibilityDescription: "米家")
+        item.button?.title = " 米家"
         item.button?.target = self
         item.button?.action = #selector(toggle)
         model.titleChanged = { [weak self] title in self?.item.button?.title = title }
         panel = MenuPanel(contentRect: NSRect(x: 0, y: 0, width: 376, height: 100),
                           styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        panel.title = "日立空调"
+        panel.title = "米家"
         panel.level = .popUpMenu
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false

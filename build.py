@@ -31,9 +31,9 @@ if args.worker or not (worker / "CloudWorker").exists():
     if worker.exists():
         shutil.rmtree(worker)
     shutil.copytree(output / "worker" / "CloudWorker", worker, symlinks=True)
-info = {"CFBundleIdentifier": "local.hitachi.menubar", "CFBundleName": "日立空调",
+info = {"CFBundleIdentifier": "local.hitachi.menubar", "CFBundleName": "米家", "CFBundleDisplayName": "米家",
         "CFBundleExecutable": "HitachiMenuBar", "CFBundlePackageType": "APPL",
-        "CFBundleShortVersionString": "0.5.0", "CFBundleVersion": "16",
+        "CFBundleShortVersionString": "0.5.1", "CFBundleVersion": "17",
         "LSUIElement": True, "NSHighResolutionCapable": True,
         "LSMinimumSystemVersion": "13.0"}
 with (bundle / "Contents" / "Info.plist").open("wb") as output:
