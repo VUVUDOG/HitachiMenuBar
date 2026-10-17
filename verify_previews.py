@@ -12,7 +12,7 @@ root = Path(__file__).resolve().parent
 parser = argparse.ArgumentParser()
 parser.add_argument("--arch", choices=["arm64", "x86_64"], default="arm64")
 args = parser.parse_args()
-application = (root / "dist" / ("intel" if args.arch == "x86_64" else "") / "HitachiMenuBar.app/Contents/MacOS/HitachiMenuBar")
+application = (root / "dist" / ("intel" if args.arch == "x86_64" else "") / "MijiaMenuBar.app/Contents/MacOS/MijiaMenuBar")
 version = plistlib.loads((application.parent.parent / "Info.plist").read_bytes())["CFBundleShortVersionString"]
 report = Path.home() / "Library/Application Support/HitachiMenuBar/report.json"
 for phase in ("control", "logged-out"):

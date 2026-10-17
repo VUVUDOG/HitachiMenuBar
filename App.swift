@@ -667,7 +667,7 @@ final class AppModel: ObservableObject {
 // Launch at login and in-app updates from the project's GitHub releases.
 final class Updater: ObservableObject {
     static let shared = Updater()
-    static let repository = "VUVUDOG/HitachiMenuBar"
+    static let repository = "VUVUDOG/MijiaMenuBar"
     #if arch(arm64)
     static let assetSuffix = "arm64"
     #else
@@ -750,7 +750,7 @@ final class Updater: ObservableObject {
                 if Self.isNewer(version, than: AppModel.version) {
                     let download = Self.base + "/releases/download/" + tag + "/"
                     self.latest = version
-                    self.asset = URL(string: download + "HitachiMenuBar-\(version)-\(Self.assetSuffix).zip")
+                    self.asset = URL(string: download + "MijiaMenuBar-\(version)-\(Self.assetSuffix).zip")
                     self.checksums = URL(string: download + "SHA256SUMS.txt")
                     if manual { self.show(nil) }
                     if ProcessInfo.processInfo.environment["HITACHI_UPDATE_INSTALL"] == "1" { self.install() }
@@ -837,7 +837,7 @@ final class Updater: ObservableObject {
         let zip = staging.appendingPathComponent(asset.lastPathComponent)
         try archive.write(to: zip)
         guard try run("/usr/bin/ditto", ["-x", "-k", zip.path, staging.path]) == 0 else { throw UpdateError("无法解压安装包") }
-        let app = staging.appendingPathComponent("HitachiMenuBar.app")
+        let app = staging.appendingPathComponent("MijiaMenuBar.app")
         guard let info = NSDictionary(contentsOf: app.appendingPathComponent("Contents/Info.plist")),
               info["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier,
               info["CFBundleShortVersionString"] as? String == version else { throw UpdateError("安装包内容与版本不符") }

@@ -15,7 +15,7 @@ if platform.machine() != args.arch:
     parser.error("云端运行环境必须使用对应架构的 Python 构建；当前 Python 为 " + platform.machine())
 output = root / "dist" if args.arch == "arm64" else root / "dist" / "intel"
 work = root / ".build" / args.arch
-bundle = output / "HitachiMenuBar.app"
+bundle = output / "MijiaMenuBar.app"
 macos = bundle / "Contents" / "MacOS"
 macos.mkdir(parents=True, exist_ok=True)
 resources = bundle / "Contents" / "Resources"
@@ -31,14 +31,14 @@ if args.worker or not (worker / "CloudWorker").exists():
     if worker.exists():
         shutil.rmtree(worker)
     shutil.copytree(output / "worker" / "CloudWorker", worker, symlinks=True)
-info = {"CFBundleIdentifier": "local.hitachi.menubar", "CFBundleName": "米家", "CFBundleDisplayName": "米家",
-        "CFBundleExecutable": "HitachiMenuBar", "CFBundlePackageType": "APPL",
+info = {"CFBundleIdentifier": "local.hitachi.menubar", "CFBundleName": "米家菜单栏", "CFBundleDisplayName": "米家菜单栏",
+        "CFBundleExecutable": "MijiaMenuBar", "CFBundlePackageType": "APPL",
         "CFBundleShortVersionString": "0.5.1", "CFBundleVersion": "17",
         "LSUIElement": True, "NSHighResolutionCapable": True,
         "LSMinimumSystemVersion": "13.0"}
 with (bundle / "Contents" / "Info.plist").open("wb") as output:
     plistlib.dump(info, output)
-subprocess.run(["swiftc", str(root / "App.swift"), "-o", str(macos / "HitachiMenuBar"),
+subprocess.run(["swiftc", str(root / "App.swift"), "-o", str(macos / "MijiaMenuBar"),
                 "-target", args.arch + "-apple-macos13.0", "-framework", "AppKit", "-framework", "SwiftUI", "-framework", "Security"], check=True)
 # PyInstaller otherwise derives a fresh identifier from each executable UUID.
 # Keep the helper identity predictable; ad-hoc code changes still need Keychain

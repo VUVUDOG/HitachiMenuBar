@@ -6,8 +6,8 @@ import tempfile
 from pathlib import Path
 
 root = Path(__file__).resolve().parent
-for architecture, application in (("arm64", root / "dist/HitachiMenuBar.app"),
-                                  ("x86_64", root / "dist/intel/HitachiMenuBar.app")):
+for architecture, application in (("arm64", root / "dist/MijiaMenuBar.app"),
+                                  ("x86_64", root / "dist/intel/MijiaMenuBar.app")):
     worker = application / "Contents/Resources/CloudWorker/CloudWorker"
     with tempfile.TemporaryDirectory(prefix="hitachi-package-test-") as temporary:
         runtime = Path(temporary)

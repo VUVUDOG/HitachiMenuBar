@@ -1,10 +1,12 @@
-# 日立空调 · HitachiMenuBar
+# 米家菜单栏 · MijiaMenuBar
 
-在 macOS 菜单栏控制通过「日立智家」关联到米家的日立中央空调。每台 Mac 独立扫码登录，可以跨网络使用，无需 Home Assistant、Tailscale 或家中 Mac 常开。
+> **第三方工具，非小米官方。** 本项目与小米、米家及日立没有任何关联，仅通过米家云端接口读取和控制你自己账号下的设备。
 
-<img src="docs/images/control-glass.png" alt="v0.3.4 原生 Liquid Glass 控制面板，演示房间" width="360">
+在 macOS 菜单栏按房间控制家里的米家设备：空调、灯与灯组、窗帘、插座、循环扇、空气净化器和浴霸。每台 Mac 独立扫码登录，可以跨网络使用，无需 Home Assistant、Tailscale 或家中 Mac 常开。
 
-v0.3.4 的真实控制视图，在 macOS 26 上使用原生 Liquid Glass 渲染。截图使用演示房间、模拟状态和示例桌面，不包含真实账号或家庭设备数据；v0.4.0 新增的室温、湿度和更新提示未在此图中展示。
+<img src="docs/images/control-glass.png" alt="早期版本的空调控制面板，演示房间" width="360">
+
+截图为 v0.3.4 的空调控制视图（演示数据），尚未包含 v0.5 新增的全屋设备列表与房间行；整体风格一致。
 
 ## 下载与安装
 
@@ -12,64 +14,57 @@ v0.3.4 的真实控制视图，在 macOS 26 上使用原生 Liquid Glass 渲染�
 
 | Mac 类型 | 下载 |
 | --- | --- |
-| Apple Silicon（M 系列） | [arm64.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.2/HitachiMenuBar-0.4.2-arm64.zip) |
-| Intel 处理器 | [intel.zip](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.4.2/HitachiMenuBar-0.4.2-intel.zip) |
+| Apple Silicon（M 系列） | [arm64.zip](https://github.com/VUVUDOG/MijiaMenuBar/releases/download/v0.5.1/MijiaMenuBar-0.5.1-arm64.zip) |
+| Intel 处理器 | [intel.zip](https://github.com/VUVUDOG/MijiaMenuBar/releases/download/v0.5.1/MijiaMenuBar-0.5.1-intel.zip) |
 
-[全部版本与图文指南](https://github.com/VUVUDOG/HitachiMenuBar/releases) · [安装使用说明](docs/usage.md)
+[全部版本](https://github.com/VUVUDOG/MijiaMenuBar/releases) · [安装使用说明](docs/usage.md)
 
-v0.3.4 图文指南（界面与安装步骤仍适用）：[PDF](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.pdf) · [离线网页版](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.html) · [长图](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-guide.png) · [完整分享包](https://github.com/VUVUDOG/HitachiMenuBar/releases/download/v0.3.4/HitachiMenuBar-0.3.4-sharing-kit.zip)
-
-1. 手机米家 → 连接三方平台 → 日立中央空调，输入日立智家账号密码完成关联，确认米家能控制设备。
-2. 下载匹配芯片的 ZIP，解压后将 `HitachiMenuBar.app` 放入「应用程序」并打开。
-3. 点击菜单栏「空调」，选择「扫码登录米家」，用已关联设备的米家账号扫码并在手机确认。
-4. 等待房间和状态载入，选择房间进行控制。
+1. 确认手机米家 App 能正常控制要使用的设备。日立中央空调需先在米家 → 连接三方平台 → 日立中央空调中完成关联。
+2. 下载匹配芯片的 ZIP，解压后将 `MijiaMenuBar.app` 放入「应用程序」并打开。
+3. 点击菜单栏「米家」，选择「扫码登录米家」，用米家 App 扫码并在手机确认。
+4. 等待房间和设备载入，选择房间进行控制。
 
 安装包包含运行环境，无需安装 Python、uv 或开发工具。每台 Mac 各自登录。
 
-从 **v0.4.0** 起支持应用内更新：启动时及每 24 小时检查一次 GitHub 最新版本，面板出现「发现新版本」后点击「更新」即可自动下载、校验、替换并重新打开。v0.4.1 起通过发布页跳转识别新版本，不受 GitHub API 每小时 60 次的匿名限额影响，代理或共享网络下也能正常检查。v0.3.x 用户需手动下载一次新版本。
-
-## 系统玻璃外观
-
-| 系统 | 背景效果 |
-| --- | --- |
-| macOS 26 或更新 | 原生 Liquid Glass，带系统玻璃底色。 |
-| macOS 13–15 | 自动使用系统菜单毛玻璃，保留旧系统兼容性。 |
-
-两种背景均保留圆角，窗口随内容贴合，不增加上下占位；更新提示、二维码或房间数变化时窗口高度同步调整（v0.4.2 修复了检查更新提示导致上下文字出界的问题）。自 v0.3.5 起关闭系统窗口阴影，以去除 macOS 26 上圆角外侧的黑色边框。外观由系统版本决定，Apple Silicon 和 Intel 都采用相同判断；底色随壁纸和后方窗口变化。启用系统「降低透明度」等辅助功能时，系统材质的透明程度也会变化。
-
-<details>
-<summary>查看兼容毛玻璃分支</summary>
-
-<img src="docs/images/control-menu.png" alt="系统菜单毛玻璃兼容分支，演示房间" width="320">
-
-此图在 macOS 26 上强制使用菜单毛玻璃分支渲染，用于展示兼容材质；具体旧系统显示效果可能不同。
-
-</details>
+应用内更新：启动时及每 24 小时检查新版本，面板出现「发现新版本」后点击「更新」即可自动下载、校验、替换并重新打开。**v0.5.1 起应用文件改名为 `MijiaMenuBar.app`，旧版「日立空调」（`HitachiMenuBar.app`）无法自动更新到本版本：请手动下载一次，退出并删除旧应用后打开新版**，登录状态会保留。
 
 ## 功能
 
-- 系统玻璃背景与圆角；macOS 26+ 使用原生 Liquid Glass，macOS 13–15 自动回退到菜单毛玻璃。
-- 多房间切换、开关、设定温度、运行模式和风量。
-- 点击即生效：界面立即显示新状态，后台同步到空调；失败时自动恢复原状态并提示。
-- 连续操作不丢失：连按温度只发送最终值，发送中的新操作排队，同一房间的多项改动合并为一次发送。
-- 室温与湿度：读取同一米家房间内的米家温湿度计，显示在房间卡片和温度卡片中；无温度计的房间不显示。
-- 开机自动启动：齿轮菜单中开关，使用系统「登录项」。
-- 应用内更新：检查 GitHub 发布版本，下载后校验 SHA-256、应用标识和签名，通过后替换并重新打开。
-- 控制选项按设备功能定义生成，读取不到或不可写的功能不开放操作。
-- 展开面板立即发起刷新，随后每 30 秒刷新；收起后暂停。
-- 控制后回读确认，底部显示更新时间与连接提示。
-- 齿轮菜单提供同步房间、重新登录、退出登录、开机自动启动、检查更新、复制诊断和退出应用。
-- 登录会话保存于本机系统钥匙串；成功读取后，本次运行的后续请求复用内存会话。
+**按房间浏览**：顶部按米家房间排列，显示房间温度，以及房间内是否有设备开着。只读取空调所在的米家家庭，其他家庭（如公司、亲友共享）的设备不会出现。
 
-已验证设备支持 16–32°C（米家接口仅支持整数度，0.5°C 调节只能在实体面板上操作）、自动 / 制冷 / 除湿 / 送风 / 制热，以及自动 / 低 / 中 / 高风。具体选项以设备能力为准。大数字为**设定温度**；空调本身不提供室温，室温来自同房间的米家温湿度计，新增或更换温度计后在齿轮菜单「同步房间」即可识别。
+**空调**：开关、设定温度（整数度）、运行模式与风量；显示同房间米家温湿度计的室温和湿度。
+
+**设备列表**（每行显示状态和开关，点击展开更多控制）：
+
+| 设备 | 可调项 |
+| --- | --- |
+| 灯 / 米家灯组 | 开关、亮度、色温；灯组排在最前，可一键控制整组 |
+| 窗帘 | 打开 / 暂停 / 关闭、开合百分比，显示当前位置 |
+| 插座 | 开关，显示实时功率 |
+| 循环扇 | 开关、直吹 / 自然风、风速档位、摇头 |
+| 空气净化器 | 开关、模式、风速，显示 PM2.5 |
+| 浴霸 | 照明（开关、亮度、色温）、模式（待机 / 吹风 / 暖风 / 干燥 / 除雾 / 消毒）、目标温度 |
+
+为避免给智能灯断电，**墙壁开关暂不接入**；门锁、摄像机、保管箱等安全类设备不接入。
+
+**操作体验**
+
+- 点击即生效：界面立即显示新状态，后台同步；云端回读未确认时自动恢复原状态并提示。
+- 连续操作不丢失：连按或拖动只发送最终值，发送中的新操作排队，同一设备的多项改动合并发送。
+- 展开面板立即刷新，之后每 30 秒刷新；设备列表只读取当前房间，切换房间时刷新。
+- 系统玻璃外观：macOS 26+ 使用原生 Liquid Glass，macOS 13–15 回退到菜单毛玻璃；窗口高度随内容调整，设备多时列表在面板内滚动。
+- 齿轮菜单：同步房间、重新登录、退出登录、开机自动启动、检查更新、复制诊断、退出应用。
+- 登录会话保存在本机系统钥匙串；本次运行的后续请求复用内存会话。
+
+新增或更换设备、调整米家房间后，在齿轮菜单点击「同步房间」即可重新识别。
 
 ## 当前说明
 
-第三方工具，非日立或小米官方产品，尚未验证全部日立型号；连接依赖米家与日立云端服务。
+**第三方工具，非小米官方产品**，与小米、米家及日立无关。功能依赖米家云端服务，接口变化可能导致暂时不可用；各设备功能以其米家功能定义为准，尚未验证全部型号。
 
 当前使用 ad-hoc 开发签名，未取得 Developer ID 签名或 Apple 公证。首次启动如提示无法验证开发者，确认下载来源后可在「系统设置 → 隐私与安全性」允许打开。
 
-钥匙串弹窗需要当前 Mac 的「登录」钥匙串密码。选择「始终允许」可记住对当前程序的授权；更新版本可能触发重新授权。重复弹窗仍是已知问题，不能保证所有 Mac 已消除。账号登录态与系统授权是独立状态。
+钥匙串弹窗需要当前 Mac 的「登录」钥匙串密码。选择「始终允许」可记住对当前程序的授权；更新版本可能触发重新授权。
 
 Intel 版已通过 Apple Silicon 主机上的 Rosetta 验证，尚未在实体 Intel Mac 上实测。
 
@@ -84,7 +79,7 @@ uv sync --frozen --python 3.12
 uv run python build.py --worker
 ```
 
-输出 `dist/HitachiMenuBar.app`。仅修改 Swift 界面后可运行 `uv run python build.py`；云端代码变更后需要 `--worker`。
+输出 `dist/MijiaMenuBar.app`。仅修改 Swift 界面后可运行 `uv run python build.py`；云端代码变更后需要 `--worker`。
 
 在 Apple Silicon 主机上构建 Intel 版，需要 Rosetta 和独立的 x86_64 Python：
 
@@ -94,7 +89,7 @@ UV_PROJECT_ENVIRONMENT=.venv-intel uv sync --frozen --python cpython-3.12.13-mac
 .venv-intel/bin/python build.py --arch x86_64 --worker
 ```
 
-输出 `dist/intel/HitachiMenuBar.app`。必须使用与目标架构对应的 Python 构建。
+输出 `dist/intel/MijiaMenuBar.app`。必须使用与目标架构对应的 Python 构建。
 
 ## 验证与反馈
 
@@ -105,13 +100,13 @@ uv run python verify_app.py
 uv run python verify_packages.py
 ```
 
-单元测试与原生回归使用临时目录、模拟钥匙串和模拟会话，不控制真实空调。打包检查要求两种架构已构建。
+单元测试与原生回归使用临时目录、模拟钥匙串和模拟会话，不控制真实设备；设备列表的布局测试使用 `docs/fixtures/accessories.json` 中匿名化的设备功能定义。打包检查要求两种架构已构建。
 
-`verify_previews.py` 读取本机设备缓存生成预览；`verify_control.py` 是真实设备集成检查，会调节指定关机房间设定温度并恢复，仅在需要真实设备验证时手动运行。
+`verify_control.py` 是真实设备集成检查，会调节指定关机房间的空调设定温度并恢复，仅在需要真实设备验证时手动运行。
 
-运行数据位于 `~/Library/Application Support/HitachiMenuBar`；开发脚本默认使用 `.runtime/`。这些文件及凭证不属于源码或发行包。
+运行数据位于 `~/Library/Application Support/HitachiMenuBar`（沿用旧目录以保留登录）；开发脚本默认使用 `.runtime/`。这些文件及凭证不属于源码或发行包。
 
-请在 [Issues](https://github.com/VUVUDOG/HitachiMenuBar/issues) 提供版本、Mac 芯片、macOS 版本、复现步骤及「齿轮 → 复制诊断信息」。诊断不含账号、密码、设备标识或登录会话；不要提交实时二维码或设备报告。
+请在 [Issues](https://github.com/VUVUDOG/MijiaMenuBar/issues) 提供版本、Mac 芯片、macOS 版本、复现步骤及「齿轮 → 复制诊断信息」。诊断不含账号、密码、设备标识或登录会话；不要提交实时二维码或设备报告。
 
 ## 开源许可
 
@@ -119,10 +114,10 @@ uv run python verify_packages.py
 
 允许使用、复制、修改、分发及商用，包括发布修改后的版本；分发本软件或其重要部分时，须保留版权声明和 MIT 许可声明。软件按许可证中的“原样”条款提供。
 
-第三方依赖及引用代码仍遵循各自的许可证，相关版权与许可声明应予保留；本项目的 MIT 许可不替代第三方许可。欢迎通过 [Issues](https://github.com/VUVUDOG/HitachiMenuBar/issues) 反馈问题，或提交 Pull Request 参与改进。
+「小米」「米家」为其权利人的商标，本项目仅用于说明兼容性，不代表任何授权或合作关系。第三方依赖及引用代码仍遵循各自的许可证。欢迎通过 [Issues](https://github.com/VUVUDOG/MijiaMenuBar/issues) 反馈问题，或提交 Pull Request 参与改进。
 
 ## 实现参考
 
-- [hass-xiaomi-miot](https://github.com/al-one/hass-xiaomi-miot)：第三方设备列表和 MIoT 云端请求。
+- [hass-xiaomi-miot](https://github.com/al-one/hass-xiaomi-miot)：设备列表和 MIoT 云端请求。
 - [Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor)：米家扫码协议。
 - [日立智家关联米家社区讨论](https://bbs.hassbian.com/archiver/?tid-28735.html)。
